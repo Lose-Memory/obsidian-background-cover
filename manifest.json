@@ -4,6 +4,6 @@
 	"version": "1.0.0",
 	"minAppVersion": "1.13.0",
 	"description": "Customize Obsidian background with a local image folder: only the currently used image is loaded into memory, supports folders outside the vault, fixed-interval auto rotation and manual random switch. Does not modify theme variables.",
-	"author": "obsidian-background-cover",
+	"author": "Lose-Memory",
 	"isDesktopOnly": true
 }

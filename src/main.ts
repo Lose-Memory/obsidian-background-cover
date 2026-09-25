@@ -105,10 +105,15 @@ export default class BackgroundCoverPlugin extends Plugin {
 		return this.folderCache;
 	}
 
-	/** 强制重新扫描。 */
+	/**
+	 * 强制重新扫描，并重置播放序列。
+	 * 重洗是必要的：重扫后应从新的随机顺序开始，而不是接着旧序列往下走
+	 * （旧序列里还可能残留已被删除的文件）。
+	 */
 	invalidateFolderScan(): void {
 		this.folderCache = null;
 		this.folderCacheKey = "";
+		this.playlist.reset();
 	}
 
 	// ============================================================================

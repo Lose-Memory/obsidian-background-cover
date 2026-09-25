@@ -151,6 +151,17 @@ export class ShufflePlaylist {
 	private listKey = "";
 
 	/**
+	 * 清空播放序列：下次取图时重新洗牌。
+	 * 用于「重新扫描」——重新读取文件夹后应从新的随机顺序开始，
+	 * 而不是接着旧序列往下走（旧序列还可能残留已删除的文件）。
+	 */
+	reset(): void {
+		this.items = [];
+		this.index = 0;
+		this.listKey = "";
+	}
+
+	/**
 	 * 取下一张。
 	 * @param list 当前候选列表（如文件夹扫描结果）
 	 * @param listKey 列表源标识（如文件夹缓存键）；变化时立即重洗

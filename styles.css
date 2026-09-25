@@ -160,6 +160,16 @@ body.bgc-transparent-theme {
 	   所以直接在根这一层把它置空。 */
 	--titlebar-background: transparent;
 	--titlebar-background-focused: transparent;
+
+	/* 视图标题行（.view-header，显示笔记标题的那一行）：核心用
+	   --file-header-background / --file-header-background-focused 给它铺底，两者都取
+	   --background-primary —— 又是在根节点定型的中间变量，所以在 .workspace 里改
+	   --background-primary 根本到不了这里。
+	   症状很好认：焦点在正文时（.is-focused + .workspace-leaf.mod-active）那一行是
+	   主题的不透明底色，像"多一层滤镜"；焦点一移开（点侧边栏让该叶失去 mod-active，
+	   或打开独立设置窗口让窗口失去焦点）就恢复正常——因为那时换成优先级更低的规则。 */
+	--file-header-background: transparent;
+	--file-header-background-focused: transparent;
 }
 body.bgc-transparent-theme.theme-light {
 	--bgc-base: #fff;
@@ -194,6 +204,12 @@ body.bgc-transparent-theme
 }
 body.bgc-transparent-theme .workspace-leaf .view-header {
 	border-bottom-color: transparent;
+}
+/* 核心的 .is-focused .workspace-leaf.mod-active .view-header 是 4 个类（0,4,0），
+   比上面那条（0,3,1）高，所以再补一条把"活动叶 + 窗口聚焦"这一态也压住，
+   免得主题把底色写死在标题行上。 */
+body.bgc-transparent-theme.is-focused .workspace-leaf.mod-active .view-header {
+	background-color: transparent;
 }
 
 /* 窗口背景条：状态栏与标题栏也在 .workspace 之外，需要单独处理，否则壁纸在这两条

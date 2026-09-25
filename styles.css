@@ -146,6 +146,18 @@ body.bgc-transparent-theme {
 	--bgc-separator: rgba(128, 128, 128, 0.45);
 	--bgc-glass-blur: 16px;
 	--bgc-glass-opacity: 62%;
+
+	/* 标题栏：核心用 --titlebar-background 给 .titlebar 铺底，而它取
+	   --background-secondary —— 也就是主题的不透明层色。这就是「最顶部标题栏
+	   比工作区多一层」的来源。
+	   只改 .titlebar 的 background-color 不够：同一个变量还被
+	   .workspace-ribbon.mod-left::before（左上角那块）复用，也被
+	   .workspace-tabs.mod-top 拿去做 --tab-container-background。
+	   而且它在根节点就已经写成 var(--background-secondary) 了（中间变量在 body
+	   上定型，改 .workspace 里的 --background-secondary 到不了这里），
+	   所以直接在根这一层把它置空。 */
+	--titlebar-background: transparent;
+	--titlebar-background-focused: transparent;
 }
 body.bgc-transparent-theme.theme-light {
 	--bgc-base: #fff;
@@ -183,7 +195,9 @@ body.bgc-transparent-theme .workspace-leaf .view-header {
 }
 
 /* 窗口背景条：状态栏与标题栏也在 .workspace 之外，需要单独处理，否则壁纸在这两条
-   上会因为底色不同而出现色带。**不想让它们跟着透明，删掉这两条规则即可。** */
+   上会因为底色不同而出现色带。标题栏的底色主要由上面的 --titlebar-background 解决，
+   这里再兜一层，防止主题把 background-color 写死在 .titlebar 上。
+   **不想让它们跟着透明，删掉这两条规则即可。** */
 body.bgc-transparent-theme .status-bar,
 body.bgc-transparent-theme .titlebar {
 	background-color: transparent;

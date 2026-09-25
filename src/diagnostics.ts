@@ -104,6 +104,8 @@ export function collectDiagnostics(settings: BgcSettings, version: string): stri
 	lines.push("");
 	lines.push("--- 分隔线 ---");
 	add(".titlebar 数量 / 高度", `${count(".titlebar")} / ${css(".titlebar", "height")}`);
+	add(".titlebar background-color", css(".titlebar", "background-color"));
+	add(".titlebar 的 --titlebar-background", css(".titlebar", "--titlebar-background"));
 	add(".titlebar border-bottom", `${css(".titlebar", "border-bottom-width")} ${css(".titlebar", "border-bottom-color")}`);
 	add(".workspace-tab-header-container 数量", count(".workspace-tab-header-container"));
 	add(

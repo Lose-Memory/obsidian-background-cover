@@ -17,16 +17,22 @@
 
 /* 背景层根容器：盖在工作区内容之上。
    层级取 20：高于工作区与窗口背景条（--layer-cover 5 / --layer-sidedock 10 /
-   --layer-status-bar 15），低于 Obsidian 的全部浮层（--layer-popover 30 /
-   --layer-modal 50 / --layer-notice 60 / --layer-menu 65 / --layer-tooltip 70）。
-   这样菜单、弹窗、提示都不会被壁纸叠加（它们保持主题原样），设置弹窗的毛玻璃
-   也才能真的模糊到它背后的壁纸。 */
+   --layer-status-bar 15），低于 Obsidian 的浮层（--layer-modal 50 / --layer-notice 60 /
+   --layer-menu 65 / --layer-tooltip 70）。这样菜单、弹窗、提示都不会被壁纸叠加。 */
 body .bgc-layer {
 	position: fixed;
 	inset: 0;
 	z-index: 20;
 	pointer-events: none;
 	filter: var(--bgc-blur, none);
+}
+
+/* 无边框模式下（is-hidden-frameless，Windows/Linux 常见）Obsidian 自己把标题栏放在
+   --layer-popover(30) —— 比背景层还高，于是最顶上那一条永远看不到壁纸，露出的只是
+   底色，看起来就像"标题栏比别人多一层滤镜"。把它压到背景层之下即可。
+   注意只动它一个：--layer-popover 还被文档搜索等浮层复用，不该跟着降。 */
+body.bgc-transparent-theme.is-hidden-frameless .titlebar {
+	z-index: var(--layer-status-bar); /* 15，仍在侧边栏(10)之上，窗口按钮不受影响 */
 }
 
 /* 单张图片层：铺满根容器，尺寸模式等变量从根容器继承 */
@@ -92,7 +98,6 @@ body.bgc-blend-lighten .bgc-layer {
 .bgc-probe-modal-bg {
 	background-color: var(--settings-background, var(--modal-background));
 }
-
 /* =============================================================================
    主题背景透明化 —— 插件设置「让主题背景透明」打开时，body 上会加此类。
    这是本插件**唯一**会覆盖主题背景颜色的功能，默认关闭。
@@ -144,12 +149,9 @@ body.bgc-transparent-theme.bgc-divider-sidebar .workspace-leaf-resize-handle {
 body.bgc-transparent-theme {
 	--bgc-base: #000;
 	--bgc-separator: rgba(128, 128, 128, 0.45);
-	--bgc-glass-blur: 16px;
-	--bgc-glass-opacity: 62%;
 
 	/* 标题栏：核心用 --titlebar-background 给 .titlebar 铺底，而它取
-	   --background-secondary —— 也就是主题的不透明层色。这就是「最顶部标题栏
-	   比工作区多一层」的来源。
+	   --background-secondary —— 也就是主题的不透明层色。
 	   只改 .titlebar 的 background-color 不够：同一个变量还被
 	   .workspace-ribbon.mod-left::before（左上角那块）复用，也被
 	   .workspace-tabs.mod-top 拿去做 --tab-container-background。
@@ -209,20 +211,6 @@ body.bgc-transparent-theme .titlebar {
 body.bgc-transparent-theme.bgc-divider-titlebar .workspace-tab-header-container,
 body.bgc-transparent-theme.bgc-divider-titlebar .titlebar {
 	border-bottom: 1px solid var(--bgc-separator);
-}
-
-/* 设置弹窗的毛玻璃效果：壁纸在弹窗之下（背景层 z-index 20 < --layer-modal 50），
-   所以 backdrop-filter 真的能模糊到它背后的壁纸。底色仍取主题自己的
-   --settings-background / --modal-background，只是按设置掺入透明度，因此原本的
-   配色与圆角边框都保留，不会成为一块生硬的不透明面板。
-   模糊半径与底色不透明度由设置页控制（--bgc-glass-blur / --bgc-glass-opacity）。 */
-body.bgc-transparent-theme.bgc-modal-glass .modal {
-	background-color: color-mix(
-		in srgb,
-		var(--settings-background, var(--modal-background)) var(--bgc-glass-opacity, 62%),
-		transparent
-	);
-	backdrop-filter: blur(var(--bgc-glass-blur, 16px)) saturate(1.15);
 }
 
 /* Bases（数据库）视图自带一层不透明覆盖 */

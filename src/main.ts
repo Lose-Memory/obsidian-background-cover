@@ -24,14 +24,12 @@ import { BackgroundCoverSettingTab, BgcSettings, DEFAULT_SETTINGS } from "./sett
 const THEME_TRANSPARENT_CLASS = "bgc-transparent-theme";
 const DIVIDER_TITLEBAR_CLASS = "bgc-divider-titlebar";
 const DIVIDER_SIDEBAR_CLASS = "bgc-divider-sidebar";
-const MODAL_GLASS_CLASS = "bgc-modal-glass";
 
 /** 这些类在卸载时要一并清掉。 */
 const THEME_CLASSES = [
 	THEME_TRANSPARENT_CLASS,
 	DIVIDER_TITLEBAR_CLASS,
 	DIVIDER_SIDEBAR_CLASS,
-	MODAL_GLASS_CLASS,
 ];
 
 export default class BackgroundCoverPlugin extends Plugin {
@@ -275,14 +273,11 @@ export default class BackgroundCoverPlugin extends Plugin {
 		document.body.toggleClass(THEME_TRANSPARENT_CLASS, on);
 		document.body.toggleClass(DIVIDER_TITLEBAR_CLASS, on && this.settings.titlebarDivider);
 		document.body.toggleClass(DIVIDER_SIDEBAR_CLASS, on && this.settings.sidebarDivider);
-		document.body.toggleClass(MODAL_GLASS_CLASS, on && this.settings.modalGlass);
 		document.body.setCssProps({
 			"--bgc-separator": toRgbaColor(
 				this.settings.separatorColor,
 				this.settings.separatorOpacity
 			),
-			"--bgc-glass-blur": `${this.settings.modalGlassBlur}px`,
-			"--bgc-glass-opacity": `${Math.round(this.settings.modalGlassOpacity * 100)}%`,
 		});
 	}
 

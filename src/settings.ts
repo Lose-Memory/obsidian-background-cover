@@ -45,12 +45,6 @@ export interface BgcSettings {
 	separatorColor: string;
 	/** 分隔线浓度 0–1。 */
 	separatorOpacity: number;
-	/** 设置弹窗是否使用毛玻璃效果。 */
-	modalGlass: boolean;
-	/** 毛玻璃模糊半径（像素）。 */
-	modalGlassBlur: number;
-	/** 弹窗底色不透明度 0.2–1（越小越透，玻璃感越强）。 */
-	modalGlassOpacity: number;
 }
 
 export const DEFAULT_SETTINGS: BgcSettings = {
@@ -70,9 +64,6 @@ export const DEFAULT_SETTINGS: BgcSettings = {
 	// 中性灰：深浅主题下都看得见，不必因主题明暗各配一次
 	separatorColor: "#808080",
 	separatorOpacity: 0.45,
-	modalGlass: true,
-	modalGlassBlur: 16,
-	modalGlassOpacity: 0.62,
 };
 
 const SIZE_MODEL_OPTIONS: Record<string, string> = {
@@ -298,50 +289,6 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 					})
 			);
 
-		new Setting(containerEl)
-			.setName("设置弹窗毛玻璃")
-			.setDesc(
-				"设置弹窗的底色掺入透明度并模糊它背后的壁纸，不再是压在壁纸上的一块生硬面板。菜单与提示不受影响。需先开启「让主题背景透明」。"
-			)
-			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.modalGlass).onChange(async (value) => {
-					this.plugin.settings.modalGlass = value;
-					await this.plugin.saveSettings();
-					this.plugin.applyThemeTransparency();
-				})
-			);
-
-		new Setting(containerEl)
-			.setName("毛玻璃模糊半径")
-			.setDesc("单位像素，0 表示不模糊（只保留半透明底色）。需先开启「弹窗毛玻璃」。")
-			.addSlider((slider) =>
-				slider
-					.setLimits(0, 40, 1)
-					.setValue(this.plugin.settings.modalGlassBlur)
-					.setDynamicTooltip()
-					.onChange(async (value) => {
-						this.plugin.settings.modalGlassBlur = value;
-						await this.plugin.saveSettings();
-						this.plugin.applyThemeTransparency();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("弹窗底色不透明度")
-			.setDesc(
-				"越小越透、玻璃感越强；但背后壁纸的亮部会把弹窗提亮，弹窗文字的对比度会下降，建议 0.6 左右。需先开启「弹窗毛玻璃」。"
-			)
-			.addSlider((slider) =>
-				slider
-					.setLimits(0.2, 1, 0.02)
-					.setValue(this.plugin.settings.modalGlassOpacity)
-					.setDynamicTooltip()
-					.onChange(async (value) => {
-						this.plugin.settings.modalGlassOpacity = value;
-						await this.plugin.saveSettings();
-						this.plugin.applyThemeTransparency();
-					})
-			);
 
 		// ---- 自动轮播 ----
 		new Setting(containerEl).setName("自动轮播").setHeading();

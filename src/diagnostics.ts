@@ -70,11 +70,6 @@ export function collectDiagnostics(settings: BgcSettings, version: string): stri
 	add(".bgc-layer 数量", count(".bgc-layer"));
 	add(".bgc-layer z-index", css(".bgc-layer", "z-index"));
 	add("--bgc-separator（行内）", document.body.style.getPropertyValue("--bgc-separator") || "(未设置)");
-	add("--bgc-glass-blur（行内）", document.body.style.getPropertyValue("--bgc-glass-blur") || "(未设置)");
-	add(
-		"--bgc-glass-opacity（行内）",
-		document.body.style.getPropertyValue("--bgc-glass-opacity") || "(未设置)"
-	);
 	add("background.enabled", settings.enabled);
 	add("background.imageFolder", settings.imageFolder);
 	add("与主题配合设置", JSON.stringify({
@@ -83,9 +78,6 @@ export function collectDiagnostics(settings: BgcSettings, version: string): stri
 		sidebarDivider: settings.sidebarDivider,
 		separatorColor: settings.separatorColor,
 		separatorOpacity: settings.separatorOpacity,
-		modalGlass: settings.modalGlass,
-		modalGlassBlur: settings.modalGlassBlur,
-		modalGlassOpacity: settings.modalGlassOpacity,
 	}));
 
 	lines.push("");
@@ -120,7 +112,7 @@ export function collectDiagnostics(settings: BgcSettings, version: string): stri
 	);
 
 	lines.push("");
-	lines.push("--- 弹窗（毛玻璃）---");
+	lines.push("--- 弹窗 / 浮层 ---");
 	add(".modal-container 数量", count(".modal-container"));
 	add(".modal 数量", count(".modal"));
 	add(".modal.mod-settings 数量", count(".modal.mod-settings"));
@@ -129,8 +121,7 @@ export function collectDiagnostics(settings: BgcSettings, version: string): stri
 	add(".modal backdrop-filter", css(".modal", "backdrop-filter"));
 	add(".modal 位置", css(".modal", "position"));
 	add(".modal 尺寸", `${css(".modal", "width")} x ${css(".modal", "height")}`);
-	lines.push("（提示：要诊断设置弹窗，请先把设置弹窗打开再运行本命令；");
-	lines.push("  若上面 .modal 数量为 0，说明弹窗不在当前文档里——多半是独立窗口。）");
+	lines.push("（提示：若上面 .modal 数量为 0，说明弹窗不在当前文档里——多半是独立窗口。）");
 	lines.push("===== 诊断信息结束 =====");
 
 	return lines.join("\n");

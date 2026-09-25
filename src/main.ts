@@ -15,6 +15,12 @@ import { BackgroundLayer, createImageObjectUrl } from "./background";
 import { expandPathVariables, isDirectory, listImagesInFolder, ShufflePlaylist } from "./folder";
 import { BackgroundCoverSettingTab, BgcSettings, DEFAULT_SETTINGS } from "./settings";
 
+/**
+ * 主题背景透明化类名（样式定义在 styles.css）。
+ * 这是本插件唯一会覆盖主题背景变量的功能，默认关闭。
+ */
+const THEME_TRANSPARENT_CLASS = "bgc-transparent-theme";
+
 export default class BackgroundCoverPlugin extends Plugin {
 	settings!: BgcSettings;
 	private layer: BackgroundLayer | null = null;
@@ -34,6 +40,7 @@ export default class BackgroundCoverPlugin extends Plugin {
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
+		this.applyThemeTransparency();
 
 		// 命令
 		this.addCommand({
@@ -75,6 +82,8 @@ export default class BackgroundCoverPlugin extends Plugin {
 		// unmount 会同时移除背景层与容器上的混合模式类
 		this.layer?.unmount();
 		this.layer = null;
+		// 主题透明化是覆盖主题变量的功能，卸载时必须还原
+		document.body.removeClass(THEME_TRANSPARENT_CLASS);
 	}
 
 	async loadSettings(): Promise<void> {
@@ -235,9 +244,16 @@ export default class BackgroundCoverPlugin extends Plugin {
 		}
 	}
 
+	/**
+	 * 同步「让主题背景透明」开关：在 body 上加/去类，具体样式见 styles.css。
+	 * 这是本插件唯一会覆盖主题背景变量的功能，默认关闭。
+	 */
+	applyThemeTransparency(): void {
+		document.body.toggleClass(THEME_TRANSPARENT_CLASS, this.settings.transparentTheme);
+	}
+
 	/** 启用/停用切换命令。 */
-	async toggleEnabled(): Promise<void> {
-		this.settings.enabled = !this.settings.enabled;
+	async toggleEnabled(): Promise<void> {		this.settings.enabled = !this.settings.enabled;
 		await this.saveSettings();
 		await this.applyRuntimeState();
 	}

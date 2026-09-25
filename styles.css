@@ -83,3 +83,90 @@ body.bgc-blend-lighten .bgc-layer {
 	color: var(--text-muted);
 	overflow-wrap: anywhere;
 }
+
+/* =============================================================================
+   主题背景透明化 —— 插件设置「让主题背景透明」打开时，body 上会加此类。
+   这是本插件**唯一**会覆盖主题背景变量的功能，默认关闭。
+
+   作用：主题给工作区/侧边栏/标题栏铺的不透明背景色会作为混合背景参与
+   mix-blend-mode，把壁纸往主题配色上拉（表现为壁纸发灰、发紫、暗部被提亮，
+   看起来像主题给背景加了滤镜）。把这些表面改成透明，壁纸即还原成本色。
+
+   ⚠ 变量必须写在 body.theme-*.bgc-transparent-theme 上：
+   主题一般把变量定义在 .theme-dark（特异性 0,1,0）上，只写 body（0,0,1）会被
+   主题压过去，表现为「开关完全没生效」——这是最容易踩的坑。
+   ============================================================================ */
+body.theme-dark.bgc-transparent-theme,
+body.theme-light.bgc-transparent-theme {
+	--background-primary: transparent;
+	--background-primary-alt: transparent;
+	--background-secondary: transparent;
+	--background-secondary-alt: transparent;
+	--background-modifier-cover: transparent;
+	--titlebar-background: transparent;
+	--titlebar-background-focused: transparent;
+	--tab-container-background: transparent;
+	--tab-background-active: transparent;
+	--ribbon-background: transparent;
+	--ribbon-background-collapsed: transparent;
+	--code-background: transparent;
+	--divider-color: transparent;
+
+	/* 想保留弹窗背后的压暗层（更容易看清弹窗），删掉上面
+	   --background-modifier-cover 那一行即可。 */
+}
+
+/* 混合中性底色：深色主题取黑（lighten 的中性色）、浅色主题取白（multiply 的中性色）。
+   只把表面变透明而不给底色时，露出的是 Obsidian 窗口底色；它偏亮时会与 lighten
+   一起把整张壁纸连暗部都提亮成灰白。固定成中性色后壁纸才是本色。 */
+body.bgc-transparent-theme {
+	--bgc-base: #000;
+}
+body.bgc-transparent-theme.theme-light {
+	--bgc-base: #fff;
+}
+/* 底色本身也要用最高特异性写：写成 body.bgc-transparent-theme（0,1,1）会与主题里
+   body.theme-dark { background: … }（同为 0,1,1）打平，胜负变成由加载顺序决定。
+   这里带上主题类，压过任何单类名的 body 规则。 */
+body.theme-dark.bgc-transparent-theme,
+body.theme-light.bgc-transparent-theme,
+body.theme-dark.bgc-transparent-theme .app-container,
+body.theme-light.bgc-transparent-theme .app-container {
+	background-color: var(--bgc-base);
+}
+/* 兜底：万一主题让 body 没铺满视口，html 也别露出窗口底色。
+   :has() 不可用时整条规则被丢弃，不影响上面的效果。 */
+html:has(> body.bgc-transparent-theme.theme-dark) {
+	background-color: #000;
+}
+html:has(> body.bgc-transparent-theme.theme-light) {
+	background-color: #fff;
+}
+
+/* 主题或核心直接用固定色铺底、不经过上面变量的地方
+   （例如 Royal Velvet 的 .status-bar 直接用 var(--layer-0)，
+   每个视图标题下还有一条 5px 的 var(--layer-2) 分隔条） */
+body.bgc-transparent-theme .status-bar,
+body.bgc-transparent-theme .workspace-ribbon,
+body.bgc-transparent-theme .workspace-leaf .view-header,
+body.bgc-transparent-theme
+	.workspace-split.mod-root
+	> .workspace-leaf:first-of-type:last-of-type
+	.view-header {
+	background-color: transparent;
+}
+body.bgc-transparent-theme .workspace-leaf .view-header {
+	border-bottom-color: transparent;
+}
+
+/* Bases（数据库）视图自带一层不透明覆盖 */
+body.bgc-transparent-theme .workspace-leaf-content[data-type="bases"] {
+	--bases-table-group-background: transparent;
+	--bases-table-header-background: transparent;
+	--bases-table-summary-background: transparent;
+	--bases-table-cell-background-active: transparent;
+	--bases-table-cell-background-disabled: transparent;
+	--bases-cards-background: transparent;
+	--bases-cards-container-background: transparent;
+	--bases-cards-cover-background: transparent;
+}

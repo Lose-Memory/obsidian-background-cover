@@ -32,6 +32,11 @@ export interface BgcSettings {
 	autoStatus: boolean;
 	/** 自动轮播间隔（秒）。 */
 	autoIntervalSeconds: number;
+	/**
+	 * 是否让主题背景透明（把工作区/侧边栏/标题栏的不透明背景色改成透明）。
+	 * 这是本插件唯一会覆盖主题背景变量的功能，默认关闭。
+	 */
+	transparentTheme: boolean;
 }
 
 export const DEFAULT_SETTINGS: BgcSettings = {
@@ -45,6 +50,7 @@ export const DEFAULT_SETTINGS: BgcSettings = {
 	transitionEnabled: true,
 	autoStatus: false,
 	autoIntervalSeconds: 60,
+	transparentTheme: false,
 };
 
 const SIZE_MODEL_OPTIONS: Record<string, string> = {
@@ -196,6 +202,22 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 					this.plugin.settings.transitionEnabled = value;
 					await this.plugin.saveSettings();
 					this.plugin.applyAppearance();
+				})
+			);
+
+		// ---- 与主题配合 ----
+		new Setting(containerEl).setName("与主题配合").setHeading();
+
+		new Setting(containerEl)
+			.setName("让主题背景透明")
+			.setDesc(
+				"把工作区、侧边栏、标题栏等不透明背景色改为透明，避免它们把壁纸往主题配色上拉（壁纸发灰、发紫、暗部被提亮）。这是本插件唯一会覆盖主题背景变量的功能，默认关闭；开启后背景会变成纯黑（深色主题）或纯白（浅色主题），请自行确认与当前主题的搭配效果。"
+			)
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.transparentTheme).onChange(async (value) => {
+					this.plugin.settings.transparentTheme = value;
+					await this.plugin.saveSettings();
+					this.plugin.applyThemeTransparency();
 				})
 			);
 

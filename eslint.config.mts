@@ -8,6 +8,8 @@ export default defineConfig(
 		'dist',
 		'output',
 		'ref',
+		// 本地渲染验证工装（无头浏览器加载真实构建产物跑回归），只在本地存在
+		'.verify',
 		'esbuild.config.mjs',
 		'version-bump.mjs',
 		'versions.json',

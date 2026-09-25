@@ -84,6 +84,7 @@
 
 - `Random background / 随机更换背景`：立即随机换一张
 - `Toggle background / 启用或停用背景`：开关背景
+- `Copy diagnostics / 复制诊断信息`：把运行环境（Electron / Chromium 版本、`color-mix` 与 `backdrop-filter` 支持情况）、主题变量、浮层 DOM 结构与相关计算样式复制到剪贴板。排查「分隔线/毛玻璃在某个主题下不生效」这类只在特定环境出现的问题时，先跑一次它——**请先把设置弹窗打开**，报告里的 `.modal 数量` 会告诉我们弹窗是否就在当前文档里
 
 ### 状态栏
 

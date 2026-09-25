@@ -13,6 +13,7 @@ import { Notice, Plugin } from "obsidian";
 
 import { BackgroundLayer, createImageObjectUrl } from "./background";
 import { toRgbaColor } from "./css";
+import { collectDiagnostics } from "./diagnostics";
 import { expandPathVariables, isDirectory, listImagesInFolder, ShufflePlaylist } from "./folder";
 import { BackgroundCoverSettingTab, BgcSettings, DEFAULT_SETTINGS } from "./settings";
 
@@ -67,6 +68,13 @@ export default class BackgroundCoverPlugin extends Plugin {
 			name: "Toggle background / 启用或停用背景",
 			callback: () => {
 				void this.toggleEnabled();
+			},
+		});
+		this.addCommand({
+			id: "bgc-copy-diagnostics",
+			name: "Copy diagnostics / 复制诊断信息",
+			callback: () => {
+				void this.copyDiagnostics();
 			},
 		});
 
@@ -276,6 +284,22 @@ export default class BackgroundCoverPlugin extends Plugin {
 			"--bgc-glass-blur": `${this.settings.modalGlassBlur}px`,
 			"--bgc-glass-opacity": `${Math.round(this.settings.modalGlassOpacity * 100)}%`,
 		});
+	}
+
+	/**
+	 * 收集环境/主题/浮层相关的事实并复制到剪贴板（同时打印到控制台）。
+	 * 「分隔线/毛玻璃不生效」这类问题只在用户机器上能观察，先拿到事实再改代码。
+	 */
+	async copyDiagnostics(): Promise<void> {
+		const report = collectDiagnostics(this.settings, this.manifest.version);
+		try {
+			await navigator.clipboard.writeText(report);
+			new Notice("诊断信息已复制到剪贴板 / diagnostics copied to clipboard.");
+		} catch (error) {
+			// 剪贴板不可用时把内容并进错误输出，用户仍可从控制台取到完整报告
+			console.error(`[BackgroundCover] Clipboard unavailable; diagnostics:\n${report}`, error);
+			new Notice("复制失败，请从开发者控制台复制 / copy failed; see the console.");
+		}
 	}
 
 	/** 启用/停用切换命令。 */

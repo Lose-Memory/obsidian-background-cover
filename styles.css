@@ -87,6 +87,12 @@ body.bgc-blend-lighten .bgc-layer {
 	overflow-wrap: anywhere;
 }
 
+/* 诊断用的探针（见 src/diagnostics.ts）：挂上它就能读到主题弹窗底色的实际解析值。
+   自定义属性的计算值不做 var() 替换，只能借一个真实渲染的元素让浏览器算出来。 */
+.bgc-probe-modal-bg {
+	background-color: var(--settings-background, var(--modal-background));
+}
+
 /* =============================================================================
    主题背景透明化 —— 插件设置「让主题背景透明」打开时，body 上会加此类。
    这是本插件**唯一**会覆盖主题背景颜色的功能，默认关闭。
@@ -116,12 +122,15 @@ body.theme-light.bgc-transparent-theme .workspace {
 	--tab-background-active: transparent;
 	--ribbon-background: transparent;
 	--ribbon-background-collapsed: transparent;
+
+	/* 注意：这里**不要**去覆盖 --divider-color。Obsidian 的
+	   --tab-outline-color 是在根部就写成 var(--divider-color) 的，中间变量早就在
+	   body 上定型成主题的 transparent 了，改 .workspace 里的 --divider-color 对标签栏
+	   无效；更糟的是它会让「侧边栏分隔线」开关失效（手柄的 border-color 一直有色）。
+	   两条分隔线因此都用下面的显式规则来控制。 */
 }
 
-/* 侧边栏与工作区之间的细线：Obsidian 的分隔线画在 .workspace-leaf-resize-handle 上
-   （border-color: var(--divider-color)），而 --divider-color 默认取
-   --background-modifier-border —— 主题常把它设成 transparent（Royal Velvet 就是），
-   于是完全没有分隔线。这里只给这个手柄上色，不动工作区里其它任何分隔线。 */
+/* 侧边栏与工作区之间的细线（显式指定，防止主题把手柄的 border-color 写死） */
 body.bgc-transparent-theme.bgc-divider-sidebar .workspace-leaf-resize-handle {
 	border-color: var(--bgc-separator);
 }
@@ -179,7 +188,11 @@ body.bgc-transparent-theme .status-bar,
 body.bgc-transparent-theme .titlebar {
 	background-color: transparent;
 }
-/* 标题栏与下方工作区之间补一条细线（颜色与侧边栏分隔线一致） */
+/* 顶部那条：无边框模式下"标题栏"其实是标签栏（.workspace-tab-header-container），
+   它的 border-bottom 取 --tab-outline-color（→ --divider-color），所以主题一透明就
+   什么都没有。这里同时照顾两种窗口模式：标签栏与 .titlebar 各画一条。
+   （.titlebar 在 is-hidden-frameless 下高度为 0，不会多出一条线。） */
+body.bgc-transparent-theme.bgc-divider-titlebar .workspace-tab-header-container,
 body.bgc-transparent-theme.bgc-divider-titlebar .titlebar {
 	border-bottom: 1px solid var(--bgc-separator);
 }

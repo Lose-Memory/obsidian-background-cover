@@ -1,0 +1,85 @@
+/* =============================================================================
+   obsidian-background-cover 样式
+
+   原则：本插件只添加背景层与少量专属 UI 样式（全部使用 .bgc- 前缀），
+   不修改任何主题 CSS 变量（--background-* / --text-* / --interactive-* 等），
+   因此与用户安装的主题互不冲突。
+
+   层级与结构：
+     div.bgc-layer              fixed 全屏，z-index 500，pointer-events: none
+                                承载 mix-blend-mode 与 blur —— 换图期间恒定不变
+       div.bgc-layer-image      每张图一层，只做 opacity 交叉淡化（两层交替）
+
+   动态取值由插件通过 setCssProps 写入 --bgc-* 变量，本文件只负责定位、层级、
+   混合模式与过渡的静态部分。变量兜底值必须是最终可用的值，且插件只会写入
+   合法记号（详见 src/background.ts 顶部说明）。
+   ============================================================================= */
+
+/* 背景层根容器：盖在工作区内容之上。
+   z-index 取 500，远高于工作区内容，因此主题自身不透明的背景色不会遮住图片
+   —— 这也正是本插件无需改写 --background-primary 等主题变量的原因。 */
+body .bgc-layer {
+	position: fixed;
+	inset: 0;
+	z-index: 500;
+	pointer-events: none;
+	filter: var(--bgc-blur, none);
+}
+
+/* 单张图片层：铺满根容器，尺寸模式等变量从根容器继承 */
+body .bgc-layer .bgc-layer-image {
+	position: absolute;
+	inset: 0;
+	background-image: var(--bgc-image, none);
+	background-size: var(--bgc-size, cover);
+	background-repeat: var(--bgc-repeat, no-repeat);
+	background-position: var(--bgc-position, center);
+	opacity: var(--bgc-opacity, 0);
+	transition: opacity 0.25s ease;
+}
+
+/* 关闭淡入淡出过渡（插件在根容器上加此类） */
+body .bgc-layer.bgc-no-transition .bgc-layer-image {
+	transition: none;
+}
+
+/* 混合模式 auto：浅色主题 multiply、深色主题 lighten（与 vscode-background-cover 一致） */
+body.theme-light .bgc-layer {
+	mix-blend-mode: multiply;
+}
+body.theme-dark .bgc-layer {
+	mix-blend-mode: lighten;
+}
+
+/* 固定混合模式：插件在 body 上添加对应 class；定义在 auto 之后，同优先级下覆盖之 */
+body.bgc-blend-multiply .bgc-layer {
+	mix-blend-mode: multiply;
+}
+body.bgc-blend-lighten .bgc-layer {
+	mix-blend-mode: lighten;
+}
+
+/* 尊重系统「减少动态效果」 */
+@media (prefers-reduced-motion: reduce) {
+	body .bgc-layer .bgc-layer-image {
+		transition: none !important;
+	}
+}
+
+/* 状态栏按钮 */
+.bgc-status-bar {
+	cursor: pointer;
+	user-select: none;
+}
+.bgc-status-bar:hover {
+	background-color: var(--background-modifier-hover);
+	border-radius: 4px;
+}
+
+/* 设置页：文件夹信息文本 */
+.bgc-folder-info {
+	margin: 4px 0 12px;
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}

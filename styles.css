@@ -86,34 +86,33 @@ body.bgc-blend-lighten .bgc-layer {
 
 /* =============================================================================
    主题背景透明化 —— 插件设置「让主题背景透明」打开时，body 上会加此类。
-   这是本插件**唯一**会覆盖主题背景变量的功能，默认关闭。
+   这是本插件**唯一**会覆盖主题背景颜色的功能，默认关闭。
 
-   作用：主题给工作区/侧边栏/标题栏铺的不透明背景色会作为混合背景参与
-   mix-blend-mode，把壁纸往主题配色上拉（表现为壁纸发灰、发紫、暗部被提亮，
-   看起来像主题给背景加了滤镜）。把这些表面改成透明，壁纸即还原成本色。
+   作用：主题给工作区/侧边栏铺的不透明背景色会作为混合背景参与 mix-blend-mode，
+   把壁纸往主题配色上拉（表现为壁纸发灰、发紫、暗部被提亮，看起来像主题给背景
+   加了滤镜）。把这些表面改成透明，壁纸即还原成本色。
 
-   ⚠ 变量必须写在 body.theme-*.bgc-transparent-theme 上：
-   主题一般把变量定义在 .theme-dark（特异性 0,1,0）上，只写 body（0,0,1）会被
-   主题压过去，表现为「开关完全没生效」——这是最容易踩的坑。
+   ⚠ 只作用于工作区（也就是「背景」本身），**不动菜单 / 弹窗 / 设置窗口**：
+   · 变量覆盖写在 .workspace 作用域内 —— 自定义属性向下继承，所以工作区里的元素
+     拿到 transparent，工作区之外的元素照旧。
+   · 结构上 Obsidian 的弹窗是 body 下与 .app-container 平级、位于 .workspace 之外
+     （.modal-container { z-index: var(--layer-modal) }），因此完全不受影响。
+   · 千万不要把下面这段写回 body / .theme-*：--background-primary 一旦全局变成
+     transparent，设置窗口、命令面板、菜单都会一起变透明（这正是之前的 bug）。
+
+   特异性：必须高于主题的 .theme-dark（0,1,0），否则会被主题压过去，
+   表现为「开关完全没生效」；只写 body（0,0,1）同样会被压过去。
    ============================================================================ */
-body.theme-dark.bgc-transparent-theme,
-body.theme-light.bgc-transparent-theme {
-	--background-primary: transparent;
-	--background-primary-alt: transparent;
-	--background-secondary: transparent;
-	--background-secondary-alt: transparent;
-	--background-modifier-cover: transparent;
-	--titlebar-background: transparent;
-	--titlebar-background-focused: transparent;
+body.theme-dark.bgc-transparent-theme .workspace,
+body.theme-light.bgc-transparent-theme .workspace {
+	--background-primary: transparent; /* 笔记/编辑器底色 */
+	--background-primary-alt: transparent; /* 视图标题 */
+	--background-secondary: transparent; /* 侧边栏 */
+	--background-secondary-alt: transparent; /* 侧边栏标题、标签栏 */
 	--tab-container-background: transparent;
 	--tab-background-active: transparent;
 	--ribbon-background: transparent;
 	--ribbon-background-collapsed: transparent;
-	--code-background: transparent;
-	--divider-color: transparent;
-
-	/* 想保留弹窗背后的压暗层（更容易看清弹窗），删掉上面
-	   --background-modifier-cover 那一行即可。 */
 }
 
 /* 混合中性底色：深色主题取黑（lighten 的中性色）、浅色主题取白（multiply 的中性色）。
@@ -143,10 +142,8 @@ html:has(> body.bgc-transparent-theme.theme-light) {
 	background-color: #fff;
 }
 
-/* 主题或核心直接用固定色铺底、不经过上面变量的地方
-   （例如 Royal Velvet 的 .status-bar 直接用 var(--layer-0)，
-   每个视图标题下还有一条 5px 的 var(--layer-2) 分隔条） */
-body.bgc-transparent-theme .status-bar,
+/* 工作区内直接用固定色铺底、不经过上面变量的地方
+   （例如 Royal Velvet 每个视图标题下那条 5px 的 var(--layer-2) 分隔条） */
 body.bgc-transparent-theme .workspace-ribbon,
 body.bgc-transparent-theme .workspace-leaf .view-header,
 body.bgc-transparent-theme
@@ -157,6 +154,13 @@ body.bgc-transparent-theme
 }
 body.bgc-transparent-theme .workspace-leaf .view-header {
 	border-bottom-color: transparent;
+}
+
+/* 窗口背景条：状态栏与标题栏也在 .workspace 之外，要单独处理，否则壁纸在这两条上
+   会因为底色不同而出现色带。**不想让它们跟着透明，删掉这两条规则即可。** */
+body.bgc-transparent-theme .status-bar,
+body.bgc-transparent-theme .titlebar {
+	background-color: transparent;
 }
 
 /* Bases（数据库）视图自带一层不透明覆盖 */

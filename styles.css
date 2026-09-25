@@ -122,24 +122,24 @@ body.theme-light.bgc-transparent-theme .workspace {
    （border-color: var(--divider-color)），而 --divider-color 默认取
    --background-modifier-border —— 主题常把它设成 transparent（Royal Velvet 就是），
    于是完全没有分隔线。这里只给这个手柄上色，不动工作区里其它任何分隔线。 */
-body.bgc-transparent-theme .workspace-leaf-resize-handle {
+body.bgc-transparent-theme.bgc-divider-sidebar .workspace-leaf-resize-handle {
 	border-color: var(--bgc-separator);
 }
 
-/* 混合中性底色 + 分隔线颜色。
+/* 底色、分隔线颜色、毛玻璃参数：分隔线/毛玻璃的具体数值由插件用 setCssProps 写进
+   --bgc-separator / --bgc-glass-* （取值来自设置页），这里只留兜底值。
    底色：深色主题取黑（lighten 的中性色）、浅色主题取白（multiply 的中性色）。
    只把表面变透明而不给底色时，露出的是 Obsidian 窗口底色；它偏亮时会与 lighten
    一起把整张壁纸连暗部都提亮成灰白。固定成中性色后壁纸才是本色。
-   底色只体现在「被透明化的那些表面」后面，弹窗/菜单有自己不透明的底色，不受影响。
-   分隔线要比主题的常规分隔线更亮一些：它画在壁纸层之下、会透过半透明的壁纸显示，
-   需要留出余量才看得见。 */
+   底色只体现在「被透明化的那些表面」后面，弹窗/菜单有自己不透明的底色，不受影响。 */
 body.bgc-transparent-theme {
 	--bgc-base: #000;
-	--bgc-separator: rgba(255, 255, 255, 0.34);
+	--bgc-separator: rgba(128, 128, 128, 0.45);
+	--bgc-glass-blur: 16px;
+	--bgc-glass-opacity: 62%;
 }
 body.bgc-transparent-theme.theme-light {
 	--bgc-base: #fff;
-	--bgc-separator: rgba(0, 0, 0, 0.26);
 }
 /* 底色本身也要用最高特异性写：写成 body.bgc-transparent-theme（0,1,1）会与主题里
    body.theme-dark { background: … }（同为 0,1,1）打平，胜负变成由加载顺序决定。
@@ -179,22 +179,23 @@ body.bgc-transparent-theme .status-bar,
 body.bgc-transparent-theme .titlebar {
 	background-color: transparent;
 }
-/* 标题栏与下方工作区之间补一条细线（与侧边栏同一颜色） */
-body.bgc-transparent-theme .titlebar {
+/* 标题栏与下方工作区之间补一条细线（颜色与侧边栏分隔线一致） */
+body.bgc-transparent-theme.bgc-divider-titlebar .titlebar {
 	border-bottom: 1px solid var(--bgc-separator);
 }
 
 /* 设置弹窗的毛玻璃效果：壁纸在弹窗之下（背景层 z-index 20 < --layer-modal 50），
    所以 backdrop-filter 真的能模糊到它背后的壁纸。底色仍取主题自己的
-   --settings-background / --modal-background，只是掺入透明度，因此原本的配色与
-   圆角边框都保留，不会成为一块生硬的不透明面板。 */
-body.bgc-transparent-theme .modal {
+   --settings-background / --modal-background，只是按设置掺入透明度，因此原本的
+   配色与圆角边框都保留，不会成为一块生硬的不透明面板。
+   模糊半径与底色不透明度由设置页控制（--bgc-glass-blur / --bgc-glass-opacity）。 */
+body.bgc-transparent-theme.bgc-modal-glass .modal {
 	background-color: color-mix(
 		in srgb,
-		var(--settings-background, var(--modal-background)) 62%,
+		var(--settings-background, var(--modal-background)) var(--bgc-glass-opacity, 62%),
 		transparent
 	);
-	backdrop-filter: blur(16px) saturate(1.15);
+	backdrop-filter: blur(var(--bgc-glass-blur, 16px)) saturate(1.15);
 }
 
 /* Bases（数据库）视图自带一层不透明覆盖 */

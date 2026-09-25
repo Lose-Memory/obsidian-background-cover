@@ -33,10 +33,24 @@ export interface BgcSettings {
 	/** 自动轮播间隔（秒）。 */
 	autoIntervalSeconds: number;
 	/**
-	 * 是否让主题背景透明（把工作区/侧边栏/标题栏的不透明背景色改成透明）。
+	 * 是否让主题背景透明（把工作区/侧边栏的不透明背景色改成透明）。
 	 * 这是本插件唯一会覆盖主题背景变量的功能，默认关闭。
 	 */
 	transparentTheme: boolean;
+	/** 是否在标题栏与工作区之间画一条分隔细线。 */
+	titlebarDivider: boolean;
+	/** 是否恢复侧边栏与工作区之间的分隔细线。 */
+	sidebarDivider: boolean;
+	/** 分隔线颜色（`#rrggbb`，颜色选择器只有 RGB，浓度见 separatorOpacity）。 */
+	separatorColor: string;
+	/** 分隔线浓度 0–1。 */
+	separatorOpacity: number;
+	/** 设置弹窗是否使用毛玻璃效果。 */
+	modalGlass: boolean;
+	/** 毛玻璃模糊半径（像素）。 */
+	modalGlassBlur: number;
+	/** 弹窗底色不透明度 0.2–1（越小越透，玻璃感越强）。 */
+	modalGlassOpacity: number;
 }
 
 export const DEFAULT_SETTINGS: BgcSettings = {
@@ -51,6 +65,14 @@ export const DEFAULT_SETTINGS: BgcSettings = {
 	autoStatus: false,
 	autoIntervalSeconds: 60,
 	transparentTheme: false,
+	titlebarDivider: true,
+	sidebarDivider: true,
+	// 中性灰：深浅主题下都看得见，不必因主题明暗各配一次
+	separatorColor: "#808080",
+	separatorOpacity: 0.45,
+	modalGlass: true,
+	modalGlassBlur: 16,
+	modalGlassOpacity: 0.62,
 };
 
 const SIZE_MODEL_OPTIONS: Record<string, string> = {
@@ -208,17 +230,117 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 		// ---- 与主题配合 ----
 		new Setting(containerEl).setName("与主题配合").setHeading();
 
+		const themeOn = this.plugin.settings.transparentTheme;
+
+		// 下面几项都要先开启「让主题背景透明」才有可见效果。这里刻意不做「依赖式禁用」：
+		// 禁用状态只在渲染时求值，而刷新设置页得重新调用 display()（obsidianmd 规则指出
+		// 1.13+ 应改用 update()，但该方法尚未进入类型库），不重绘就会留下过时且误导的
+		// 灰显状态，比不禁用更糟。因此改为在描述里写明依赖关系。
+
 		new Setting(containerEl)
 			.setName("让主题背景透明")
 			.setDesc(
-				"把工作区、侧边栏、标题栏等不透明背景色改为透明，避免它们把壁纸往主题配色上拉（壁纸发灰、发紫、暗部被提亮）。这是本插件唯一会覆盖主题背景变量的功能，默认关闭；开启后背景会变成纯黑（深色主题）或纯白（浅色主题），请自行确认与当前主题的搭配效果。"
+				"把工作区、侧边栏的不透明背景色改为透明，避免它们把壁纸往主题配色上拉（壁纸发灰、发紫、暗部被提亮）。这是本插件唯一会覆盖主题背景颜色的功能，默认关闭；开启后背景会变成纯黑（深色主题）或纯白（浅色主题），菜单与提示不受影响。"
 			)
 			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.transparentTheme).onChange(async (value) => {
+				toggle.setValue(themeOn).onChange(async (value) => {
 					this.plugin.settings.transparentTheme = value;
 					await this.plugin.saveSettings();
 					this.plugin.applyThemeTransparency();
 				})
+			);
+
+		new Setting(containerEl)
+			.setName("标题栏分隔线")
+			.setDesc("在标题栏与下方工作区之间画一条细线（主题常把 Obsidian 的分隔线设成透明）。需先开启「让主题背景透明」。")
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.titlebarDivider).onChange(async (value) => {
+					this.plugin.settings.titlebarDivider = value;
+					await this.plugin.saveSettings();
+					this.plugin.applyThemeTransparency();
+				})
+			);
+
+		new Setting(containerEl)
+			.setName("侧边栏分隔线")
+			.setDesc("恢复左右侧边栏与中间工作区之间的细线。需先开启「让主题背景透明」。")
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.sidebarDivider).onChange(async (value) => {
+					this.plugin.settings.sidebarDivider = value;
+					await this.plugin.saveSettings();
+					this.plugin.applyThemeTransparency();
+				})
+			);
+
+		new Setting(containerEl)
+			.setName("分隔线颜色")
+			.setDesc("上面两条细线的颜色。默认中性灰，深浅主题下都看得见。需先开启「让主题背景透明」。")
+			.addColorPicker((picker) =>
+				picker.setValue(this.plugin.settings.separatorColor).onChange(async (value) => {
+					this.plugin.settings.separatorColor = value;
+					await this.plugin.saveSettings();
+					this.plugin.applyThemeTransparency();
+				})
+			);
+
+		new Setting(containerEl)
+			.setName("分隔线浓度")
+			.setDesc("细线的不透明度，0 完全透明（等于不画），1 完全不透明。需先开启「让主题背景透明」。")
+			.addSlider((slider) =>
+				slider
+					.setLimits(0, 1, 0.05)
+					.setValue(this.plugin.settings.separatorOpacity)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.separatorOpacity = value;
+						await this.plugin.saveSettings();
+						this.plugin.applyThemeTransparency();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("设置弹窗毛玻璃")
+			.setDesc(
+				"设置弹窗的底色掺入透明度并模糊它背后的壁纸，不再是压在壁纸上的一块生硬面板。菜单与提示不受影响。需先开启「让主题背景透明」。"
+			)
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.modalGlass).onChange(async (value) => {
+					this.plugin.settings.modalGlass = value;
+					await this.plugin.saveSettings();
+					this.plugin.applyThemeTransparency();
+				})
+			);
+
+		new Setting(containerEl)
+			.setName("毛玻璃模糊半径")
+			.setDesc("单位像素，0 表示不模糊（只保留半透明底色）。需先开启「弹窗毛玻璃」。")
+			.addSlider((slider) =>
+				slider
+					.setLimits(0, 40, 1)
+					.setValue(this.plugin.settings.modalGlassBlur)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.modalGlassBlur = value;
+						await this.plugin.saveSettings();
+						this.plugin.applyThemeTransparency();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("弹窗底色不透明度")
+			.setDesc(
+				"越小越透、玻璃感越强；但背后壁纸的亮部会把弹窗提亮，弹窗文字的对比度会下降，建议 0.6 左右。需先开启「弹窗毛玻璃」。"
+			)
+			.addSlider((slider) =>
+				slider
+					.setLimits(0.2, 1, 0.02)
+					.setValue(this.plugin.settings.modalGlassOpacity)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.modalGlassOpacity = value;
+						await this.plugin.saveSettings();
+						this.plugin.applyThemeTransparency();
+					})
 			);
 
 		// ---- 自动轮播 ----

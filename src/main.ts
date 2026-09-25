@@ -12,14 +12,26 @@ import { existsSync } from "fs";
 import { Notice, Plugin } from "obsidian";
 
 import { BackgroundLayer, createImageObjectUrl } from "./background";
+import { toRgbaColor } from "./css";
 import { expandPathVariables, isDirectory, listImagesInFolder, ShufflePlaylist } from "./folder";
 import { BackgroundCoverSettingTab, BgcSettings, DEFAULT_SETTINGS } from "./settings";
 
 /**
- * 主题背景透明化类名（样式定义在 styles.css）。
- * 这是本插件唯一会覆盖主题背景变量的功能，默认关闭。
+ * 「与主题配合」相关类名（样式定义在 styles.css）。
+ * 这些是插件唯一会覆盖主题背景颜色的功能，默认关闭；具体子项见设置页。
  */
 const THEME_TRANSPARENT_CLASS = "bgc-transparent-theme";
+const DIVIDER_TITLEBAR_CLASS = "bgc-divider-titlebar";
+const DIVIDER_SIDEBAR_CLASS = "bgc-divider-sidebar";
+const MODAL_GLASS_CLASS = "bgc-modal-glass";
+
+/** 这些类在卸载时要一并清掉。 */
+const THEME_CLASSES = [
+	THEME_TRANSPARENT_CLASS,
+	DIVIDER_TITLEBAR_CLASS,
+	DIVIDER_SIDEBAR_CLASS,
+	MODAL_GLASS_CLASS,
+];
 
 export default class BackgroundCoverPlugin extends Plugin {
 	settings!: BgcSettings;
@@ -82,8 +94,10 @@ export default class BackgroundCoverPlugin extends Plugin {
 		// unmount 会同时移除背景层与容器上的混合模式类
 		this.layer?.unmount();
 		this.layer = null;
-		// 主题透明化是覆盖主题变量的功能，卸载时必须还原
-		document.body.removeClass(THEME_TRANSPARENT_CLASS);
+		// 主题透明化是覆盖主题背景颜色的功能，卸载时必须还原
+		for (const cls of THEME_CLASSES) {
+			document.body.removeClass(cls);
+		}
 	}
 
 	async loadSettings(): Promise<void> {
@@ -245,11 +259,23 @@ export default class BackgroundCoverPlugin extends Plugin {
 	}
 
 	/**
-	 * 同步「让主题背景透明」开关：在 body 上加/去类，具体样式见 styles.css。
-	 * 这是本插件唯一会覆盖主题背景变量的功能，默认关闭。
+	 * 同步「与主题配合」的全部开关与取值：类名加在 body 上、可调数值写成 CSS 变量，
+	 * 具体样式见 styles.css。这些是本插件唯一会覆盖主题背景颜色的功能，默认关闭。
 	 */
 	applyThemeTransparency(): void {
-		document.body.toggleClass(THEME_TRANSPARENT_CLASS, this.settings.transparentTheme);
+		const on = this.settings.transparentTheme;
+		document.body.toggleClass(THEME_TRANSPARENT_CLASS, on);
+		document.body.toggleClass(DIVIDER_TITLEBAR_CLASS, on && this.settings.titlebarDivider);
+		document.body.toggleClass(DIVIDER_SIDEBAR_CLASS, on && this.settings.sidebarDivider);
+		document.body.toggleClass(MODAL_GLASS_CLASS, on && this.settings.modalGlass);
+		document.body.setCssProps({
+			"--bgc-separator": toRgbaColor(
+				this.settings.separatorColor,
+				this.settings.separatorOpacity
+			),
+			"--bgc-glass-blur": `${this.settings.modalGlassBlur}px`,
+			"--bgc-glass-opacity": `${Math.round(this.settings.modalGlassOpacity * 100)}%`,
+		});
 	}
 
 	/** 启用/停用切换命令。 */

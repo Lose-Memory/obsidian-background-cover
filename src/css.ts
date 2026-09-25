@@ -66,3 +66,24 @@ export function resolveSizeModel(model: string): {
 
 	return { size, repeat, position };
 }
+
+/** 分隔线颜色的兜底值（设置里解析失败时使用）。 */
+const FALLBACK_SEPARATOR = { r: 128, g: 128, b: 128 };
+
+/**
+ * `#rrggbb` + 不透明度 → CSS 颜色值。
+ * 分隔线颜色由设置页的颜色选择器给出（只有 RGB，没有 alpha），不透明度单独用
+ * 滑块控制，所以在这里合成为一个 rgba()。
+ */
+export function toRgbaColor(hex: string, alpha: number): string {
+	const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+	const { r, g, b } = match?.[1]
+		? {
+				r: (parseInt(match[1], 16) >> 16) & 255,
+				g: (parseInt(match[1], 16) >> 8) & 255,
+				b: parseInt(match[1], 16) & 255,
+			}
+		: FALLBACK_SEPARATOR;
+	const a = Math.min(1, Math.max(0, alpha));
+	return `rgba(${r}, ${g}, ${b}, ${Number(a.toFixed(2))})`;
+}

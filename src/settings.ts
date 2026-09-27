@@ -5,6 +5,7 @@
  * - imageFolder：背景图片文件夹（支持绝对路径 / ~ / 环境变量，可位于仓库外）
  * - opacity / blur / sizeModel / blendMode / transitionEnabled：外观
  * - autoStatus / autoIntervalSeconds：固定间隔自动轮播
+ * - randomizeOnStart：启动时随机换一张，而不是恢复上次那张
  * - currentImagePath：最近一次应用的单张图片（重启后恢复）
  */
 import { App, PluginSettingTab, Setting } from "obsidian";
@@ -32,6 +33,8 @@ export interface BgcSettings {
 	autoStatus: boolean;
 	/** 自动轮播间隔（秒）。 */
 	autoIntervalSeconds: number;
+	/** 启动时是否随机换一张（关闭则恢复上次退出时的那张）。 */
+	randomizeOnStart: boolean;
 	/**
 	 * 是否让主题背景透明（把工作区/侧边栏的不透明背景色改成透明）。
 	 * 这是本插件唯一会覆盖主题背景变量的功能，默认关闭。
@@ -58,6 +61,7 @@ export const DEFAULT_SETTINGS: BgcSettings = {
 	transitionEnabled: true,
 	autoStatus: false,
 	autoIntervalSeconds: 60,
+	randomizeOnStart: false,
 	transparentTheme: false,
 	titlebarDivider: true,
 	sidebarDivider: true,
@@ -292,6 +296,16 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 
 		// ---- 自动轮播 ----
 		new Setting(containerEl).setName("自动轮播").setHeading();
+
+		new Setting(containerEl)
+			.setName("启动时随机更换")
+			.setDesc("开启后每次启动 Obsidian 都随机换一张；关闭则恢复上次退出时的那张。")
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.randomizeOnStart).onChange(async (value) => {
+					this.plugin.settings.randomizeOnStart = value;
+					await this.plugin.saveSettings();
+				})
+			);
 
 		new Setting(containerEl)
 			.setName("启用自动轮播")

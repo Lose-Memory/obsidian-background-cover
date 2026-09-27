@@ -172,9 +172,12 @@ export default class BackgroundCoverPlugin extends Plugin {
 
 		// 恢复上次的图：仅当该图仍属于当前文件夹的扫描结果时恢复，
 		// 否则（路径已更换 / 文件被移除）从文件夹随机选一张。
+		// 开启「启动时随机更换」时跳过恢复，直接随机一张。
 		const files = this.scanFolder();
 		const current = this.settings.currentImagePath;
-		const currentValid = Boolean(current && files.includes(current) && this.hasImage(current));
+		const currentValid =
+			!this.settings.randomizeOnStart &&
+			Boolean(current && files.includes(current) && this.hasImage(current));
 		if (currentValid) {
 			const restored = await this.applyImageFile(current);
 			if (!restored) {

@@ -233,10 +233,12 @@ The design and implementation of this plugin were informed by the following open
 
 - **[vscode-background-cover](https://github.com/AShujiao/vscode-background-cover)** (MIT, © 2021 ashujiao) — the background parameter model (opacity / blur / size mode / blend mode / transition), folder-based random rotation, and the "load only the current image" memory strategy. Its A6 note in `src/loaderFragments.ts` about `mix-blend-mode` / `filter` degrading when an element is promoted during an `opacity` animation is what this plugin's layer structure is built around.
 - **[obsidian-dynamic-theme-background](https://github.com/sean2077/obsidian-dynamic-theme-background)** (MIT, © 2025 Sean2077) — the approach to implementing the background as an independent overlay layer in Obsidian, the multiply-on-light / lighten-on-dark blend semantics, and the use of a blur filter.
-- **[obsidian-sample-plugin](https://github.com/obsidianmd/obsidian-sample-plugin)** — project scaffold (TypeScript + esbuild build configuration, manifest conventions).
+- **[obsidian-sample-plugin](https://github.com/obsidianmd/obsidian-sample-plugin)** (ISC, © 2020-2026 Dynalist Inc.) — the project scaffold this repository is derived from: the TypeScript + esbuild build configuration, the GitHub Actions workflows and the manifest conventions.
 - **[esbuild](https://esbuild.github.io/)** — the bundler.
 
-Both upstream projects are MIT-licensed, so the ideas and parameter semantics borrowed here are used within their terms. This project is an independent implementation: it contains no copied source text from either project, and the attribution above is given because it is the right thing to do, not because a licence compels it.
+The two background projects are MIT-licensed, so the design ideas and parameter semantics borrowed from them are used within their terms. This project is an independent implementation and contains **no copied source text** from either of them; the attribution above is given because it is the right thing to do, not because a licence compels it.
+
+The scaffold is a different matter: it *is* derived from obsidian-sample-plugin, so the copyright and permission notice required by its ISC license is retained in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## AI assistance disclosure
 

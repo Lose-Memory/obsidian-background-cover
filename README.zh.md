@@ -233,10 +233,12 @@ src/
 
 - **[vscode-background-cover](https://github.com/AShujiao/vscode-background-cover)**（MIT，© 2021 ashujiao）：背景参数体系（透明度 / 模糊 / 尺寸模式 / 混合模式 / 过渡动画）、文件夹随机轮播与「只加载当前图片」的内存策略；以及其 `src/loaderFragments.ts` 中关于「`mix-blend-mode` / `filter` 在 opacity 动画期间被合成器提升后混合退化」的 A6 修复记录——本插件的背景层结构正是据此把混合模式与模糊移出动画层
 - **[obsidian-dynamic-theme-background](https://github.com/sean2077/obsidian-dynamic-theme-background)**（MIT，© 2025 Sean2077）：Obsidian 端背景层的实现思路（背景作为独立层叠加、浅色 multiply / 深色 lighten 的混合语义、blur 过滤器的用法）
-- **[obsidian-sample-plugin](https://github.com/obsidianmd/obsidian-sample-plugin)**：本项目脚手架（TypeScript + esbuild 构建配置、manifest 规范）
+- **[obsidian-sample-plugin](https://github.com/obsidianmd/obsidian-sample-plugin)**（ISC，© 2020-2026 Dynalist Inc.）：本项目所衍生的脚手架（TypeScript + esbuild 构建配置、GitHub Actions 工作流、manifest 规范）
 - **[esbuild](https://esbuild.github.io/)**：打包工具
 
-两个参考项目均为 MIT 许可，因此这里借鉴的设计思路与参数语义都在其许可范围内。本项目是**独立实现**：未复制任何上游代码文本；上面列出出处是应当做的事，而不是许可强制要求的结果。
+两个背景类参考项目均为 MIT 许可，因此这里借鉴的设计思路与参数语义都在其许可范围内。本项目是**独立实现**：未复制任何上游代码文本；上面列出出处是应当做的事，而不是许可强制要求的结果。
+
+脚手架是另一回事：它**确实**衍生自 obsidian-sample-plugin，因此按 ISC 的要求保留了其版权与许可声明，见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。
 
 ## AI 辅助声明
 

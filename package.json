@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-background-cover",
-	"version": "1.0.0",
-	"description": "Obsidian plugin: customize background with a local image folder. Only loads the currently used image into memory; supports folders outside the vault; fixed-interval auto rotation; does not modify theme variables.",
+	"version": "1.0.1",
+	"description": "Customize the app background with a local image folder. Only loads the currently used image into memory; supports folders outside the vault; fixed-interval auto rotation; does not modify theme variables.",
 	"author": "Lose-Memory",
 	"main": "main.js",
 	"type": "module",

@@ -68,10 +68,13 @@ body.bgc-blend-lighten .bgc-layer {
 	mix-blend-mode: lighten;
 }
 
-/* 尊重系统「减少动态效果」 */
+/* 尊重系统「减少动态效果」。
+   这里刻意不用 !important：选择器 body .bgc-layer .bgc-layer-image 的特异性 (0,3,0)
+   已经高于基础规则 (0,1,0)（见上面的 .bgc-layer-image），而 .bgc-layer-image 是本插件
+   私有类，主题不会去覆盖它。加 !important 只会让 CSS lint 报警。 */
 @media (prefers-reduced-motion: reduce) {
 	body .bgc-layer .bgc-layer-image {
-		transition: none !important;
+		transition: none;
 	}
 }
 

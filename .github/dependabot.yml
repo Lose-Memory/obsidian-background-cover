@@ -1,0 +1,26 @@
+# Dependabot configuration.
+#
+# The community directory review includes a "Dependencies" check that fails when a
+# dependency has a known vulnerability, so keeping dependencies current is not just
+# hygiene here — it is part of staying listed. See CONTRIBUTING.md.
+#
+# Note: `obsidian` is pinned to "latest" in devDependencies. Dependabot may skip an
+# unversioned range or behave unpredictably on it, and this package also drives the
+# declarative-settings API availability — so bump it deliberately, by hand.
+
+version: 2
+updates:
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+          interval: monthly
+      open-pull-requests-limit: 5
+      commit-message:
+          prefix: 'chore(deps)'
+
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: monthly
+      commit-message:
+          prefix: 'chore(ci)'

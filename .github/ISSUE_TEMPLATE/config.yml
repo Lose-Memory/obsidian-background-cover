@@ -1,0 +1,12 @@
+# Issue template configuration.
+#
+# Blank issues stay enabled on purpose: the bug report form requires the full
+# "Copy diagnostics" output, which is the right thing to ask of a *user* but is
+# overkill when the maintainer is just noting a problem for later.
+
+blank_issues_enabled: true
+
+contact_links:
+    - name: Installation and version info
+      url: https://community.obsidian.md/plugins/background-cover
+      about: Latest release, feature overview and screenshots. Check here first if the plugin will not install, or you want to confirm which version you are on.

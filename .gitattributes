@@ -1,0 +1,16 @@
+# 仓库内一律使用 LF。
+# 与 .editorconfig 的 end_of_line = lf 保持一致，避免 Windows 上 core.autocrlf=true
+# 与 Linux CI 的检出结果不一致，产生大量无意义的换行符 diff。
+* text=auto eol=lf
+
+# 二进制资源不做换行符转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

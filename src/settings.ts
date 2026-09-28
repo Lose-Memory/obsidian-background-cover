@@ -12,6 +12,7 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 
 import type BackgroundCoverPlugin from "./main";
 import { isDirectory } from "./folder";
+import { blendModeOptions, sizeModelOptions, t } from "./i18n";
 
 export interface BgcSettings {
 	enabled: boolean;
@@ -70,26 +71,6 @@ export const DEFAULT_SETTINGS: BgcSettings = {
 	separatorOpacity: 0.45,
 };
 
-const SIZE_MODEL_OPTIONS: Record<string, string> = {
-	cover: "cover（铺满，保持比例）",
-	contain: "contain（完整显示）",
-	center: "center（原尺寸居中）",
-	repeat: "repeat（平铺）",
-	not_center: "不居中",
-	not_right_bottom: "右下角",
-	not_right_top: "右上角",
-	not_left: "靠左",
-	not_right: "靠右",
-	not_top: "靠上",
-	not_bottom: "靠下",
-};
-
-const BLEND_MODEL_OPTIONS: Record<string, string> = {
-	auto: "auto（随主题：浅色 multiply / 深色 lighten）",
-	multiply: "multiply",
-	lighten: "lighten",
-};
-
 export class BackgroundCoverSettingTab extends PluginSettingTab {
 	plugin: BackgroundCoverPlugin;
 	private folderInfoEl: HTMLElement | null = null;
@@ -104,8 +85,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName("启用背景")
-			.setDesc("开关背景图片显示。关闭时只停用背景层，不修改任何主题设置。")
+			.setName(t("settings.enable.name"))
+			.setDesc(t("settings.enable.desc"))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.enabled).onChange(async (value) => {
 					this.plugin.settings.enabled = value;
@@ -115,16 +96,14 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		// ---- 图片来源 ----
-		new Setting(containerEl).setName("图片来源").setHeading();
+		new Setting(containerEl).setName(t("settings.source.heading")).setHeading();
 
 		new Setting(containerEl)
-			.setName("背景文件夹")
-			.setDesc(
-				"图片文件夹的绝对路径，支持 ~（用户目录）与环境变量；可位于 Obsidian 仓库之外，例如 d:\\wallpapers。"
-			)
+			.setName(t("settings.folder.name"))
+			.setDesc(t("settings.folder.desc"))
 			.addText((text) =>
 				text
-					.setPlaceholder("例如 d:\\wallpapers")
+					.setPlaceholder(t("settings.folder.placeholder"))
 					.setValue(this.plugin.settings.imageFolder)
 					.onChange(async (value) => {
 						this.plugin.settings.imageFolder = value;
@@ -135,10 +114,10 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("图片数量")
-			.setDesc("填写路径后自动扫描，只统计文件名，不会把图片读入内存。")
+			.setName(t("settings.count.name"))
+			.setDesc(t("settings.count.desc"))
 			.addButton((button) =>
-				button.setButtonText("重新扫描").onClick(async () => {
+				button.setButtonText(t("settings.rescan")).onClick(async () => {
 					this.plugin.invalidateFolderScan();
 					this.refreshFolderInfo();
 					await this.plugin.applyRuntimeState();
@@ -149,11 +128,11 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 		this.refreshFolderInfo();
 
 		// ---- 外观 ----
-		new Setting(containerEl).setName("外观").setHeading();
+		new Setting(containerEl).setName(t("settings.appearance.heading")).setHeading();
 
 		new Setting(containerEl)
-			.setName("背景透明度")
-			.setDesc("背景层不透明度，0 完全透明，0.8 为上限（与 vscode-background-cover 一致）。")
+			.setName(t("settings.opacity.name"))
+			.setDesc(t("settings.opacity.desc"))
 			.addSlider((slider) =>
 				slider
 					.setLimits(0, 0.8, 0.05)
@@ -167,8 +146,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("背景模糊")
-			.setDesc("背景模糊程度，单位像素，0 关闭。")
+			.setName(t("settings.blur.name"))
+			.setDesc(t("settings.blur.desc"))
 			.addSlider((slider) =>
 				slider
 					.setLimits(0, 100, 1)
@@ -182,10 +161,10 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("尺寸模式")
-			.setDesc("背景图片的尺寸适应方式。")
+			.setName(t("settings.size.name"))
+			.setDesc(t("settings.size.desc"))
 			.addDropdown((dropdown) => {
-				for (const [value, label] of Object.entries(SIZE_MODEL_OPTIONS)) {
+				for (const [value, label] of Object.entries(sizeModelOptions())) {
 					dropdown.addOption(value, label);
 				}
 				dropdown.setValue(this.plugin.settings.sizeModel).onChange(async (value) => {
@@ -196,12 +175,10 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("混合模式")
-			.setDesc(
-				"Auto 模式随深浅主题自动切换混合方式，图片与界面内容融合；multiply / lighten 固定模式。"
-			)
+			.setName(t("settings.blend.name"))
+			.setDesc(t("settings.blend.desc"))
 			.addDropdown((dropdown) => {
-				for (const [value, label] of Object.entries(BLEND_MODEL_OPTIONS)) {
+				for (const [value, label] of Object.entries(blendModeOptions())) {
 					dropdown.addOption(value, label);
 				}
 				dropdown.setValue(this.plugin.settings.blendMode).onChange(async (value) => {
@@ -212,8 +189,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("淡入淡出过渡")
-			.setDesc("换图时平滑过渡，尊重系统的“减少动态效果”设置。")
+			.setName(t("settings.transition.name"))
+			.setDesc(t("settings.transition.desc"))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.transitionEnabled).onChange(async (value) => {
 					this.plugin.settings.transitionEnabled = value;
@@ -223,7 +200,7 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		// ---- 与主题配合 ----
-		new Setting(containerEl).setName("与主题配合").setHeading();
+		new Setting(containerEl).setName(t("settings.theme.heading")).setHeading();
 
 		const themeOn = this.plugin.settings.transparentTheme;
 
@@ -233,10 +210,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 		// 灰显状态，比不禁用更糟。因此改为在描述里写明依赖关系。
 
 		new Setting(containerEl)
-			.setName("让主题背景透明")
-			.setDesc(
-				"把工作区、侧边栏的不透明背景色改为透明，避免它们把壁纸往主题配色上拉（壁纸发灰、发紫、暗部被提亮）。这是本插件唯一会覆盖主题背景颜色的功能，默认关闭；开启后背景会变成纯黑（深色主题）或纯白（浅色主题），菜单与提示不受影响。"
-			)
+			.setName(t("settings.transparent.name"))
+			.setDesc(t("settings.transparent.desc"))
 			.addToggle((toggle) =>
 				toggle.setValue(themeOn).onChange(async (value) => {
 					this.plugin.settings.transparentTheme = value;
@@ -246,8 +221,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("标题栏分隔线")
-			.setDesc("在标题栏与下方工作区之间画一条细线（主题常把 Obsidian 的分隔线设成透明）。需先开启「让主题背景透明」。")
+			.setName(t("settings.titlebarDivider.name"))
+			.setDesc(t("settings.titlebarDivider.desc"))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.titlebarDivider).onChange(async (value) => {
 					this.plugin.settings.titlebarDivider = value;
@@ -257,8 +232,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("侧边栏分隔线")
-			.setDesc("恢复左右侧边栏与中间工作区之间的细线。需先开启「让主题背景透明」。")
+			.setName(t("settings.sidebarDivider.name"))
+			.setDesc(t("settings.sidebarDivider.desc"))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.sidebarDivider).onChange(async (value) => {
 					this.plugin.settings.sidebarDivider = value;
@@ -268,8 +243,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("分隔线颜色")
-			.setDesc("上面两条细线的颜色。默认中性灰，深浅主题下都看得见。需先开启「让主题背景透明」。")
+			.setName(t("settings.separatorColor.name"))
+			.setDesc(t("settings.separatorColor.desc"))
 			.addColorPicker((picker) =>
 				picker.setValue(this.plugin.settings.separatorColor).onChange(async (value) => {
 					this.plugin.settings.separatorColor = value;
@@ -279,8 +254,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("分隔线浓度")
-			.setDesc("细线的不透明度，0 完全透明（等于不画），1 完全不透明。需先开启「让主题背景透明」。")
+			.setName(t("settings.separatorOpacity.name"))
+			.setDesc(t("settings.separatorOpacity.desc"))
 			.addSlider((slider) =>
 				slider
 					.setLimits(0, 1, 0.05)
@@ -295,11 +270,11 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 
 
 		// ---- 自动轮播 ----
-		new Setting(containerEl).setName("自动轮播").setHeading();
+		new Setting(containerEl).setName(t("settings.auto.heading")).setHeading();
 
 		new Setting(containerEl)
-			.setName("启动时随机更换")
-			.setDesc("开启后每次启动 Obsidian 都随机换一张；关闭则恢复上次退出时的那张。")
+			.setName(t("settings.randomizeOnStart.name"))
+			.setDesc(t("settings.randomizeOnStart.desc"))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.randomizeOnStart).onChange(async (value) => {
 					this.plugin.settings.randomizeOnStart = value;
@@ -308,8 +283,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("启用自动轮播")
-			.setDesc("按固定间隔从文件夹中随机换一张背景。")
+			.setName(t("settings.autoStatus.name"))
+			.setDesc(t("settings.autoStatus.desc"))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.autoStatus).onChange(async (value) => {
 					this.plugin.settings.autoStatus = value;
@@ -319,8 +294,8 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("轮播间隔（秒）")
-			.setDesc("自动换图间隔，单位秒，最小 5 秒。")
+			.setName(t("settings.interval.name"))
+			.setDesc(t("settings.interval.desc"))
 			.addText((text) =>
 				text
 					.setPlaceholder("60")
@@ -335,13 +310,13 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			);
 
 		// ---- 操作 ----
-		new Setting(containerEl).setName("操作").setHeading();
+		new Setting(containerEl).setName(t("settings.actions.heading")).setHeading();
 
 		new Setting(containerEl)
-			.setName("随机换一张")
-			.setDesc("立即从文件夹中随机选一张图片应用。")
+			.setName(t("settings.shuffle.name"))
+			.setDesc(t("settings.shuffle.desc"))
 			.addButton((button) =>
-				button.setButtonText("随机换一张").onClick(async () => {
+				button.setButtonText(t("settings.shuffle.button")).onClick(async () => {
 					await this.plugin.randomizeBackground();
 					this.refreshFolderInfo();
 				})
@@ -355,17 +330,18 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 		const plugin = this.plugin;
 		const folder = plugin.settings.imageFolder;
 		if (!folder) {
-			this.folderInfoEl.setText("未填写文件夹路径。");
+			this.folderInfoEl.setText(t("settings.folderInfo.empty"));
 			return;
 		}
 		if (!isDirectory(folder)) {
-			this.folderInfoEl.setText("路径无效或不是文件夹，请检查（支持绝对路径 / ~ / 环境变量）。");
+			this.folderInfoEl.setText(t("settings.folderInfo.invalid"));
 			return;
 		}
 		const files = plugin.scanFolder();
-		const current = plugin.getCurrentDisplayPath()
-			? `；当前：${plugin.getCurrentDisplayPath()}`
-			: "";
-		this.folderInfoEl.setText(`共 ${files.length} 张图片（仅文件名列表，不占内存）${current}`);
+		const currentPath = plugin.getCurrentDisplayPath();
+		const current = currentPath ? t("settings.folderInfo.current", { path: currentPath }) : "";
+		this.folderInfoEl.setText(
+			t("settings.folderInfo.count", { count: files.length }) + current
+		);
 	}
 }

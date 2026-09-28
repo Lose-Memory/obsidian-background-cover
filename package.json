@@ -5,6 +5,14 @@
 	"author": "Lose-Memory",
 	"main": "main.js",
 	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Lose-Memory/obsidian-background-cover.git"
+	},
+	"homepage": "https://github.com/Lose-Memory/obsidian-background-cover#readme",
+	"bugs": {
+		"url": "https://github.com/Lose-Memory/obsidian-background-cover/issues"
+	},
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",

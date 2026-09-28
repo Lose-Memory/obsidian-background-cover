@@ -1,0 +1,121 @@
+name: Bug report
+description: Report a problem with Background Cover
+title: '[Bug] '
+labels:
+    - bug
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Thanks for taking the time to report a problem.
+
+              The single most useful thing you can attach is the output of the **Copy diagnostics** command. Most issues with this plugin depend on your theme, your Obsidian version and your window mode, and cannot be reproduced without it.
+
+    - type: textarea
+      id: diagnostics
+      attributes:
+          label: Diagnostics report
+          description: |
+              In Obsidian, open the command palette and run **Background Cover: Copy diagnostics**, then paste the result here.
+              (The command name is localised; in a Chinese install it is **复制诊断信息**.)
+          render: text
+          placeholder: |
+              ===== Background Cover diagnostics =====
+              Plugin version: 1.0.0
+              ...
+      validations:
+          required: true
+
+    - type: textarea
+      id: what-happened
+      attributes:
+          label: What happened?
+          description: Describe the problem, and what you expected to happen instead.
+      validations:
+          required: true
+
+    - type: textarea
+      id: steps
+      attributes:
+          label: Steps to reproduce
+          description: How can the problem be triggered reliably?
+          placeholder: |
+              1. Set the background folder to ...
+              2. Enable ...
+              3. ...
+      validations:
+          required: true
+
+    - type: input
+      id: obsidian-version
+      attributes:
+          label: Obsidian version
+          description: Found in **Settings → General → Current version**, or in the diagnostics report.
+          placeholder: '1.13.0'
+      validations:
+          required: true
+
+    - type: input
+      id: plugin-version
+      attributes:
+          label: Background Cover version
+          description: Found in **Settings → Community plugins**, or in the diagnostics report.
+          placeholder: '1.0.0'
+      validations:
+          required: true
+
+    - type: dropdown
+      id: os
+      attributes:
+          label: Operating system
+          options:
+              - Windows
+              - macOS
+              - Linux
+      validations:
+          required: true
+
+    - type: input
+      id: theme
+      attributes:
+          label: Theme
+          description: Which theme are you using? If the problem only appears with a specific theme, say so — it usually matters.
+          placeholder: Default, Minimal, Royal Velvet, ...
+      validations:
+          required: false
+
+    - type: dropdown
+      id: theme-transparency
+      attributes:
+          label: Is "Make theme background transparent" enabled?
+          description: Found under **Settings → Background Cover → Theme integration**. This setting overrides theme colors and changes how the wallpaper is composited.
+          options:
+              - 'No'
+              - 'Yes'
+              - Not sure
+      validations:
+          required: true
+
+    - type: dropdown
+      id: window-mode
+      attributes:
+          label: Window mode
+          description: The frameless window setting affects the title bar's z-index, which changes whether the wallpaper shows behind it.
+          options:
+              - Frameless window (default on Windows and Linux)
+              - Native window frame
+              - Not sure
+      validations:
+          required: false
+
+    - type: checkboxes
+      id: checks
+      attributes:
+          label: Before submitting
+          options:
+              - label: I am running the latest release of Background Cover.
+                required: true
+              - label: I searched the existing issues and this has not been reported yet.
+                required: true
+              - label: I have attached the full diagnostics report above.
+                required: true

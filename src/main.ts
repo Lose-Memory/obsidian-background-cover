@@ -1,5 +1,5 @@
 /**
- * obsidian-background-cover 插件入口。
+ * background-cover 插件入口。
  *
  * 功能（对应 vscode-background-cover 的背景能力，剔除粒子/宠物/在线图库）：
  * - 本地文件夹背景源（支持 Obsidian 仓库之外、~、环境变量）
@@ -15,6 +15,7 @@ import { BackgroundLayer, createImageObjectUrl } from "./background";
 import { toRgbaColor } from "./css";
 import { collectDiagnostics } from "./diagnostics";
 import { expandPathVariables, isDirectory, listImagesInFolder, ShufflePlaylist } from "./folder";
+import { t } from "./i18n";
 import { BackgroundCoverSettingTab, BgcSettings, DEFAULT_SETTINGS } from "./settings";
 
 /**
@@ -56,21 +57,21 @@ export default class BackgroundCoverPlugin extends Plugin {
 		// 命令
 		this.addCommand({
 			id: "bgc-random-background",
-			name: "Random background / 随机更换背景",
+			name: t("cmd.random"),
 			callback: () => {
 				void this.randomizeBackground();
 			},
 		});
 		this.addCommand({
 			id: "bgc-toggle-enabled",
-			name: "Toggle background / 启用或停用背景",
+			name: t("cmd.toggle"),
 			callback: () => {
 				void this.toggleEnabled();
 			},
 		});
 		this.addCommand({
 			id: "bgc-copy-diagnostics",
-			name: "Copy diagnostics / 复制诊断信息",
+			name: t("cmd.diagnostics"),
 			callback: () => {
 				void this.copyDiagnostics();
 			},
@@ -79,7 +80,7 @@ export default class BackgroundCoverPlugin extends Plugin {
 		// 状态栏按钮：点击随机换一张
 		const statusBar = this.addStatusBarItem();
 		statusBar.setText("🖼");
-		statusBar.setAttribute("aria-label", "Random background / 随机更换背景");
+		statusBar.setAttribute("aria-label", t("cmd.random"));
 		statusBar.addClass("bgc-status-bar");
 		this.registerDomEvent(statusBar, "click", () => {
 			void this.randomizeBackground();
@@ -196,7 +197,7 @@ export default class BackgroundCoverPlugin extends Plugin {
 	async randomizeBackground(): Promise<void> {
 		const files = this.scanFolder();
 		if (files.length === 0) {
-			new Notice("背景文件夹为空或路径无效 / background folder is empty or invalid.");
+			new Notice(t("notice.noImages"));
 			return;
 		}
 		const next = this.playlist.next(
@@ -224,7 +225,7 @@ export default class BackgroundCoverPlugin extends Plugin {
 			objectUrl = await createImageObjectUrl(filePath);
 		} catch (error) {
 			console.error("[BackgroundCover] Failed to apply image:", error);
-			new Notice(`背景加载失败：${(error as Error).message}`);
+			new Notice(t("notice.loadFailed", { message: (error as Error).message }));
 			return false;
 		}
 		// 读取期间又有新的切换请求，本请求已过期：丢弃并释放这一张的内存
@@ -292,16 +293,17 @@ export default class BackgroundCoverPlugin extends Plugin {
 		const report = collectDiagnostics(this.settings, this.manifest.version);
 		try {
 			await navigator.clipboard.writeText(report);
-			new Notice("诊断信息已复制到剪贴板 / diagnostics copied to clipboard.");
+			new Notice(t("notice.copied"));
 		} catch (error) {
 			// 剪贴板不可用时把内容并进错误输出，用户仍可从控制台取到完整报告
 			console.error(`[BackgroundCover] Clipboard unavailable; diagnostics:\n${report}`, error);
-			new Notice("复制失败，请从开发者控制台复制 / copy failed; see the console.");
+			new Notice(t("notice.copyFailed"));
 		}
 	}
 
 	/** 启用/停用切换命令。 */
-	async toggleEnabled(): Promise<void> {		this.settings.enabled = !this.settings.enabled;
+	async toggleEnabled(): Promise<void> {
+		this.settings.enabled = !this.settings.enabled;
 		await this.saveSettings();
 		await this.applyRuntimeState();
 	}

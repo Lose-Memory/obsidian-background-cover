@@ -21,30 +21,41 @@ jobs:
                   node-version: 24
                   cache: 'npm'
 
+            # Obsidian 安装时按「tag == manifest.json 的 version」去找 release，
+            # 所以先卡一道，避免标签写错后发布出一个永远装不上的发行版。
+            - name: Check tag matches manifest version
+              run: |
+                  tag="${GITHUB_REF#refs/tags/}"
+                  version="$(node -p "require('./manifest.json').version")"
+                  if [ "$tag" != "$version" ]; then
+                    echo "::error::Tag '$tag' does not match the version '$version' in manifest.json."
+                    exit 1
+                  fi
+
             - name: Build plugin
               run: |
                   npm ci
                   npm run build
 
-            - name: Check for optional styles
-              id: styles
-              run: |
-                  [ -f output/styles.css ] && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
-
             - name: Attest build provenance
               uses: actions/attest@v4
               with:
-                  subject-path: |
-                      output/main.js
-                      ${{ steps.styles.outputs.exists == 'true' && 'output/styles.css' || '' }}
+                  subject-path: output/*
 
-            - name: Create release
+            # 刻意不加 --draft：Obsidian 只认已发布的 release，
+            # 留成草稿会让插件在社区目录里一直装不上。
+            - name: Publish release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   tag="${GITHUB_REF#refs/tags/}"
 
+                  assets=(output/main.js output/manifest.json)
+                  if [ -f output/styles.css ]; then
+                    assets+=(output/styles.css)
+                  fi
+
                   gh release create "$tag" \
                     --title="$tag" \
-                    --draft \
-                    output/main.js output/manifest.json ${{ steps.styles.outputs.exists == 'true' && 'output/styles.css' || '' }}
+                    --generate-notes \
+                    "${assets[@]}"

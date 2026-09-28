@@ -74,8 +74,9 @@ npm run build
     - `isDesktopOnly` (boolean)
     - Optional: `author`, `authorUrl`, `fundingUrl` (string or map)
 - Never change `id` after release. Treat it as stable API.
+- The `id` must be unique across all published plugins and **must not contain `obsidian`**. This restriction was added to Obsidian's manifest reference on 2025-10-01; plugins published before that date (e.g. `obsidian-git`, `obsidian42-brat`) keep their ids, because the directory cannot change an identifier after publication. Our id is `background-cover` — do not reintroduce the `obsidian` prefix.
 - Keep `minAppVersion` accurate when using newer APIs.
-- Canonical requirements are coded here: https://github.com/obsidianmd/obsidian-releases/blob/master/.github/workflows/validate-plugin-entry.yml
+- Canonical requirements live in the developer docs: https://docs.obsidian.md/Reference/Manifest and https://docs.obsidian.md/community-directory/submission-requirements-for-plugins. (The old `validate-plugin-entry.yml` in `obsidian-releases` no longer exists — review is now server-side at community.obsidian.md.)
 
 ## Testing
 

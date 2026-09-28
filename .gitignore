@@ -25,6 +25,10 @@ ref/
 _doubao_chat.txt
 和豆包的对话*.html
 
+# ---- 本地留存的外部网页快照 ----
+# 例如从 community.obsidian.md 下载的审核页；文件名即页面标题
+Background Cover*.html
+
 # ---- 编辑器与系统文件 ----
 .vscode/
 .idea/

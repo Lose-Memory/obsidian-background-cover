@@ -33,6 +33,7 @@ src/
   i18n.ts         # UI strings (English + Chinese) and language selection
   css.ts          # size-mode → CSS mapping, colour helpers
   folder.ts       # path expansion, recursive scan, shuffle playlist
+  theme.ts        # the dark-theme guard (appearance API it uses, and why)
   diagnostics.ts  # the "Copy diagnostics" report
 styles.css        # all styling; every class is prefixed bgc-
 manifest.json     # plugin manifest (id: background-cover)
@@ -45,7 +46,8 @@ These come from Obsidian's [Developer policies](https://docs.obsidian.md/communi
 - **No network access.** No `fetch`, no `requestUrl`, no downloads, no online gallery. The plugin is entirely offline.
 - **No telemetry of any kind**, and no accounts.
 - **Never execute remote code** or fetch and evaluate scripts.
-- **Do not modify theme CSS variables.** The background layer must stay an independent overlay. The single exception is the opt-in **Make theme background transparent**, which must remain off by default, must stay scoped to `.workspace` (so modals and menus are untouched), and must be fully reverted on unload.
+- **Do not modify theme CSS variables.** The single exception is the opt-in **Make theme background transparent**, which must remain off by default, must stay scoped to `.workspace` (so modals and menus are untouched), and must be fully reverted on unload. With it on, the wallpaper becomes a real background layer below the interface, and under it is the one place where an element's background color may be cleared: text content that has no background of its own — table rows and cells, math blocks, quotes, inline and fenced code. Never clear the background of anything else, and never touch `background-image` or borders (table header gradients, quote and math accent bars are deliberate decoration).
+- **Never change the user's app settings** — no appearance/theme switching, no hotkeys, no core-plugin toggles. The plugin adds a background; it does not get a say in how the app is configured.
 - **Do not widen file access.** The plugin reads the folder the user configured, plus its subfolders. It never writes there.
 - **Clean up on unload.** Register every event, DOM listener and interval with the `register*` helpers, and revoke every blob URL.
 - **Keep `main.ts` a lifecycle file.** Feature logic belongs in its own module.
@@ -74,8 +76,11 @@ In practice this means: if you change rendering, blend modes, z-index or the the
 
 ## Releasing (maintainers)
 
-1. `npm version <x.y.z>` — the `version` script updates `manifest.json` and `versions.json`. `.npmrc` sets `tag-version-prefix=""`, so the tag is the bare version with no `v` prefix.
-2. Add the entry to [`CHANGELOG.md`](CHANGELOG.md).
-3. Push the tag. The release workflow refuses to publish if the tag does not match the `version` in `manifest.json`.
+Problems noticed while using the plugin are captured in a local, untracked `TODO.md` at the repository root. It is listed in `.gitignore` and is deliberately **not** committed: a pasted diagnostics report contains the maintainer's own wallpaper folder path, and that is not something to publish. Contributors will not have this file — it is a maintainer's notebook, not a project artifact.
+
+1. Triage `TODO.md` first. Fill in the trigger conditions on the "待处理" entries, set a priority, merge anything that is really one problem, and move whatever you have decided not to do into "不做 / 暂缓" with a reason.
+2. `npm version <x.y.z>` — the `version` script updates `manifest.json` and `versions.json`. `.npmrc` sets `tag-version-prefix=""`, so the tag is the bare version with no `v` prefix.
+3. Write the [`CHANGELOG.md`](CHANGELOG.md) entry, taking the wording from the "已修复，待随版本发布" section of `TODO.md`, then delete those entries. Deriving the changelog from a list rather than from memory is the whole point of step 1 — this step is easy to skip, and 1.0.1 was released without an entry.
+4. Push the tag. The release workflow refuses to publish if the tag does not match the `version` in `manifest.json`.
 
 After the first release, routine updates only need a new release whose tag matches the manifest version — the community directory picks it up.

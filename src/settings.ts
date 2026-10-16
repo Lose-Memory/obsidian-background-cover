@@ -37,7 +37,7 @@ export interface BgcSettings {
 	/** 启动时是否随机换一张（关闭则恢复上次退出时的那张）。 */
 	randomizeOnStart: boolean;
 	/**
-	 * 是否让主题背景透明（把工作区/侧边栏的不透明背景色改成透明）。
+	 * 是否让主题背景透明（把工作区/侧边栏的不透明背景色改成透明，并把壁纸沉到界面之下）。
 	 * 这是本插件唯一会覆盖主题背景变量的功能，默认关闭。
 	 */
 	transparentTheme: boolean;
@@ -121,6 +121,12 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 					this.plugin.invalidateFolderScan();
 					this.refreshFolderInfo();
 					await this.plugin.applyRuntimeState();
+				})
+			)
+			// 「复制文件名」与「重新扫描」共用一个控件区：两者都是对"当前这张图/这个文件夹"的操作。
+			.addButton((button) =>
+				button.setButtonText(t("settings.copyName")).onClick(async () => {
+					await this.plugin.copyCurrentImageName();
 				})
 			);
 

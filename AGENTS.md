@@ -75,6 +75,7 @@ npm run build
     - Optional: `author`, `authorUrl`, `fundingUrl` (string or map)
 - Never change `id` after release. Treat it as stable API.
 - The `id` must be unique across all published plugins and **must not contain `obsidian`**. This restriction was added to Obsidian's manifest reference on 2025-10-01; plugins published before that date (e.g. `obsidian-git`, `obsidian42-brat`) keep their ids, because the directory cannot change an identifier after publication. Our id is `background-cover` — do not reintroduce the `obsidian` prefix.
+- **The user-facing `description` must not name Obsidian either.** The directory review rejected 1.0.0 for exactly this; it went live only after the wording was changed to "the app" (that change is what 1.0.1 is). `package.json` carries a second copy of the description — keep both in step. Treat the plugin `name` the same way: it is a trademark, and the `id` rule above comes from the same place.
 - Keep `minAppVersion` accurate when using newer APIs.
 - Canonical requirements live in the developer docs: https://docs.obsidian.md/Reference/Manifest and https://docs.obsidian.md/community-directory/submission-requirements-for-plugins. (The old `validate-plugin-entry.yml` in `obsidian-releases` no longer exists — review is now server-side at community.obsidian.md.)
 

@@ -25,6 +25,8 @@ const EN = {
 	"notice.loadFailed": "Failed to load the background image: {message}",
 	"notice.copied": "Diagnostics copied to the clipboard.",
 	"notice.copyFailed": "Copy failed. See the developer console for the full report.",
+	"notice.copiedName": "Copied file name: {name}",
+	"notice.noCurrentImage": "No background image is showing right now.",
 
 	// ---- 设置：总开关 ----
 	"settings.enable.name": "Enable background",
@@ -39,8 +41,9 @@ const EN = {
 	"settings.folder.placeholder": "For example d:\\wallpapers",
 	"settings.count.name": "Image count",
 	"settings.count.desc":
-		"The folder is scanned after you enter a path. Only file names are counted; images are never loaded into memory.",
+		"The folder is scanned after you enter a path. Only file names are counted; images are never loaded into memory. Copy file name copies the name of the image that is showing right now.",
 	"settings.rescan": "Rescan",
+	"settings.copyName": "Copy file name",
 	"settings.folderInfo.empty": "No folder path set.",
 	"settings.folderInfo.invalid":
 		"The path is invalid or is not a folder. Supported: absolute paths, ~, and environment variables.",
@@ -58,7 +61,7 @@ const EN = {
 	"settings.size.desc": "How the background image is scaled and positioned.",
 	"settings.blend.name": "Blend mode",
 	"settings.blend.desc":
-		"auto follows the theme: multiply on light themes, lighten on dark themes. multiply and lighten are fixed.",
+		"auto follows the theme: multiply on light themes, lighten on dark themes. multiply and lighten are fixed. Blending only applies while the wallpaper sits above the interface; with make theme background transparent on, the wallpaper is the background layer and has nothing left to blend with.",
 	"settings.transition.name": "Fade transition",
 	"settings.transition.desc":
 		"Crossfade smoothly when the image changes. Respects the system reduce motion setting.",
@@ -67,7 +70,7 @@ const EN = {
 	"settings.theme.heading": "Theme integration",
 	"settings.transparent.name": "Make theme background transparent",
 	"settings.transparent.desc":
-		"Make the opaque background colors of the workspace and sidebars transparent, so they stop tinting the wallpaper (graying it out, shifting it toward the theme palette, or lifting its shadows). This is the only feature that overrides theme colors, and it is off by default. When on, the workspace base color becomes pure black (dark themes) or pure white (light themes); menus and notices are unaffected.",
+		"Make the workspace and sidebar backgrounds transparent and drop the wallpaper below the interface, so the two stop blending into each other (bright interface elements no longer show through the image on dark themes, and the image is no longer veiled by the base color on light themes). This is the only feature that overrides theme colors, and it is off by default. When on, the workspace base color becomes pure black (dark themes) or pure white (light themes) and the opacity setting fades the image toward it; menus, notices and modals are unaffected.",
 	"settings.titlebarDivider.name": "Title bar divider",
 	"settings.titlebarDivider.desc":
 		"Draw a thin line between the title bar and the workspace below it. Themes often set Obsidian's divider color to transparent. Requires make theme background transparent.",
@@ -128,6 +131,8 @@ const ZH: Record<BgcKey, string> = {
 	"notice.loadFailed": "背景加载失败：{message}",
 	"notice.copied": "诊断信息已复制到剪贴板。",
 	"notice.copyFailed": "复制失败，请从开发者控制台查看完整报告。",
+	"notice.copiedName": "已复制文件名：{name}",
+	"notice.noCurrentImage": "当前没有显示中的背景图。",
 
 	// ---- 设置：总开关 ----
 	"settings.enable.name": "启用背景",
@@ -140,8 +145,10 @@ const ZH: Record<BgcKey, string> = {
 		"图片文件夹的绝对路径，支持 ~（用户目录）与环境变量；可位于 Obsidian 仓库之外，例如 d:\\wallpapers。",
 	"settings.folder.placeholder": "例如 d:\\wallpapers",
 	"settings.count.name": "图片数量",
-	"settings.count.desc": "填写路径后自动扫描，只统计文件名，不会把图片读入内存。",
+	"settings.count.desc":
+		"填写路径后自动扫描，只统计文件名，不会把图片读入内存。「复制文件名」复制当前正在显示的那张图的文件名。",
 	"settings.rescan": "重新扫描",
+	"settings.copyName": "复制文件名",
 	"settings.folderInfo.empty": "未填写文件夹路径。",
 	"settings.folderInfo.invalid": "路径无效或不是文件夹，请检查（支持绝对路径 / ~ / 环境变量）。",
 	"settings.folderInfo.count": "共 {count} 张图片（仅文件名列表，不占内存）",
@@ -157,7 +164,7 @@ const ZH: Record<BgcKey, string> = {
 	"settings.size.desc": "背景图片的缩放与定位方式。",
 	"settings.blend.name": "混合模式",
 	"settings.blend.desc":
-		"auto 随深浅主题自动切换混合方式，图片与界面内容融合；multiply / lighten 为固定模式。",
+		"auto 随深浅主题自动切换混合方式；multiply / lighten 为固定模式。仅在壁纸位于界面之上时生效；开启「让主题背景透明」后壁纸就是背景层，没有可混合的对象。",
 	"settings.transition.name": "淡入淡出过渡",
 	"settings.transition.desc": "换图时平滑过渡，尊重系统的「减少动态效果」设置。",
 
@@ -165,7 +172,7 @@ const ZH: Record<BgcKey, string> = {
 	"settings.theme.heading": "与主题配合",
 	"settings.transparent.name": "让主题背景透明",
 	"settings.transparent.desc":
-		"把工作区、侧边栏的不透明背景色改为透明，避免它们把壁纸往主题配色上拉（壁纸发灰、发紫、暗部被提亮）。这是本插件唯一会覆盖主题背景颜色的功能，默认关闭；开启后工作区底色会变成纯黑（深色主题）或纯白（浅色主题），菜单与提示不受影响。",
+		"把工作区、侧边栏的不透明背景色改为透明，并让壁纸沉到界面之下：界面与壁纸不再互相混色（深色主题下界面亮部不再透到图上，浅色主题下图像不再被底色蒙白）。这是本插件唯一会覆盖主题背景颜色的功能，默认关闭；开启后工作区底色为纯黑（深色主题）或纯白（浅色主题），壁纸按「背景透明度」往它淡化，菜单/提示/弹窗不受影响。",
 	"settings.titlebarDivider.name": "标题栏分隔线",
 	"settings.titlebarDivider.desc":
 		"在标题栏与下方工作区之间画一条细线（主题常把 Obsidian 的分隔线设成透明）。需先开启「让主题背景透明」。",

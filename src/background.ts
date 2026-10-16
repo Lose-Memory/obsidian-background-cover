@@ -23,6 +23,10 @@
  *     ├── div.bgc-layer-image     ← 旧图：只做 opacity 淡出
  *     └── div.bgc-layer-image     ← 新图：只做 opacity 淡入
  *
+ * 层级与混合方式由 CSS 根据「是否开启让主题背景透明」决定：叠加模式 z-index 20、
+ * 与界面做 mix-blend-mode；真背景模式 z-index -1、只与 body 底色合成（见 styles.css）。
+ * JS 这边不写死层级，换图期间也一概不动。
+ *
  * 为什么混合模式与模糊必须放在不参与动画的父层上：
  * `mix-blend-mode` / `filter` 所在元素在 opacity 动画期间会被合成器提升为独立
  * 合成层，混合模式随之退化为 normal（切图瞬间整屏变亮、盖住界面）。让父层承担

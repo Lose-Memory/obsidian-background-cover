@@ -5,8 +5,14 @@
    不修改任何主题 CSS 变量（--background-* / --text-* / --interactive-* 等），
    因此与用户安装的主题互不冲突。
 
+   两种存在方式（同一套图层，只换层级与混合方式）：
+     · 叠加模式（默认，未开「让主题背景透明」）：z-index 20，盖在内容之上，
+       用 mix-blend-mode 与界面合成 —— 不依赖主题透明就能看见壁纸。
+     · 真背景模式（开启「让主题背景透明」）：z-index -1，沉到内容之下，
+       只与 body 底色合成 —— 正文与面板整层叠在壁纸之上，画面不再被界面搅浑。
+
    层级与结构：
-     div.bgc-layer              fixed 全屏，z-index 500，pointer-events: none
+     div.bgc-layer              fixed 全屏，pointer-events: none
                                 承载 mix-blend-mode 与 blur —— 换图期间恒定不变
        div.bgc-layer-image      每张图一层，只做 opacity 交叉淡化（两层交替）
 
@@ -15,7 +21,7 @@
    合法记号（详见 src/background.ts 顶部说明）。
    ============================================================================= */
 
-/* 背景层根容器：盖在工作区内容之上。
+/* 背景层根容器：默认盖在工作区内容之上（叠加模式）。
    层级取 20：高于工作区与窗口背景条（--layer-cover 5 / --layer-sidedock 10 /
    --layer-status-bar 15），低于 Obsidian 的浮层（--layer-modal 50 / --layer-notice 60 /
    --layer-menu 65 / --layer-tooltip 70）。这样菜单、弹窗、提示都不会被壁纸叠加。 */
@@ -25,14 +31,6 @@ body .bgc-layer {
 	z-index: 20;
 	pointer-events: none;
 	filter: var(--bgc-blur, none);
-}
-
-/* 无边框模式下（is-hidden-frameless，Windows/Linux 常见）Obsidian 自己把标题栏放在
-   --layer-popover(30) —— 比背景层还高，于是最顶上那一条永远看不到壁纸，露出的只是
-   底色，看起来就像"标题栏比别人多一层滤镜"。把它压到背景层之下即可。
-   注意只动它一个：--layer-popover 还被文档搜索等浮层复用，不该跟着降。 */
-body.bgc-transparent-theme.is-hidden-frameless .titlebar {
-	z-index: var(--layer-status-bar); /* 15，仍在侧边栏(10)之上，窗口按钮不受影响 */
 }
 
 /* 单张图片层：铺满根容器，尺寸模式等变量从根容器继承 */
@@ -66,6 +64,38 @@ body.bgc-blend-multiply .bgc-layer {
 }
 body.bgc-blend-lighten .bgc-layer {
 	mix-blend-mode: lighten;
+}
+
+/* =============================================================================
+   真背景模式：开启「让主题背景透明」后，壁纸沉到**内容之下**。
+
+   为什么要换一套层级：叠加模式下壁纸必须与它下面的所有东西做 mix-blend-mode
+   合成，被合成进去的不只是底色，还有正文与面板本身——
+     · 深色主题（lighten）：界面亮部（正文、标题栏文字、表单）在 max() 里压过壁纸，
+       于是"图像和背景一起变透明"，图像内容看不清；
+     · 浅色主题（multiply）：界面与底色一起把整张图往白里拉，
+       表现为"图像上层蒙了一层滤镜"。
+   主题透明只能去掉主题的不透明**底色**，去不掉这层合成，所以用户会觉得开关没用。
+
+   沉到内容之下后，参与合成的只剩 body 的底色，而底色被固定成混合中性色
+   （深色=黑、浅色=白，见下面的 --bgc-base）——合成结果就是壁纸本身；
+   正文与面板则整层叠在壁纸之上，文字清晰、画面干净。
+
+   为什么 z-index 能取 -1（对照 app.css 实测）：
+   · `body { contain: strict }` 含 paint containment，body 因此是**层叠上下文**，
+     z-index:-1 的子元素画在 body 自己的底色之上、body 其余内容之下；
+   · `.app-container` 核心只有 flex/尺寸、**没有底色**，挡不住壁纸；
+     本插件自己给它加过底色，所以真背景模式下必须改回透明（见下面的底色规则）；
+   · `.titlebar`/`.status-bar` 这些窗口背景条在 .workspace 之外，
+     由本文件后面几条规则单独改成透明，壁纸照样透得出来。
+   注意 blur（filter）与混合模式仍留在这一层、换图时不变，交叉淡化仍只动子层。 */
+body.bgc-transparent-theme .bgc-layer {
+	z-index: -1;
+
+	/* 沉到内容之下后已经没有需要混合的对象，强制 normal：
+	   固定混合模式（例如深色主题下选 multiply）会拿纯黑底色去乘，把壁纸整张抹掉。
+	   这条必须定义在上面的 auto / 固定混合模式之后，同优先级下才能覆盖它们。 */
+	mix-blend-mode: normal;
 }
 
 /* 尊重系统「减少动态效果」。
@@ -105,9 +135,13 @@ body.bgc-blend-lighten .bgc-layer {
    主题背景透明化 —— 插件设置「让主题背景透明」打开时，body 上会加此类。
    这是本插件**唯一**会覆盖主题背景颜色的功能，默认关闭。
 
-   作用：主题给工作区/侧边栏铺的不透明背景色会作为混合背景参与 mix-blend-mode，
-   把壁纸往主题配色上拉（表现为壁纸发灰、发紫、暗部被提亮，看起来像主题给背景
-   加了滤镜）。把这些表面改成透明，壁纸即还原成本色。
+   打开后同时做两件事：
+   1. 把主题铺在工作区/侧边栏上的不透明底色改成透明；
+   2. 壁纸从"盖在内容之上"改成"沉到内容之下"（见上面的真背景模式）。
+
+   为什么两件事必须一起做：只把表面变透明，壁纸仍然盖在内容之上，仍要把正文与
+   面板合成进画面（表现为壁纸被洗淡、发灰）；只把壁纸沉下去，不透明的工作区底色
+   又会把壁纸整块挡掉。合在一起才是"壁纸就是背景，界面浮在它上面"。
 
    ⚠ 只作用于工作区（也就是「背景」本身），**不动菜单 / 弹窗 / 设置窗口**：
    · 变量覆盖写在 .workspace 作用域内 —— 自定义属性向下继承，所以工作区里的元素
@@ -143,11 +177,11 @@ body.bgc-transparent-theme.bgc-divider-sidebar .workspace-leaf-resize-handle {
 	border-color: var(--bgc-separator);
 }
 
-/* 底色、分隔线颜色、毛玻璃参数：分隔线/毛玻璃的具体数值由插件用 setCssProps 写进
-   --bgc-separator / --bgc-glass-* （取值来自设置页），这里只留兜底值。
+/* 底色、分隔线颜色：分隔线颜色由插件用 setCssProps 写进 --bgc-separator（取值来自
+   设置页），这里只留兜底值。
    底色：深色主题取黑（lighten 的中性色）、浅色主题取白（multiply 的中性色）。
-   只把表面变透明而不给底色时，露出的是 Obsidian 窗口底色；它偏亮时会与 lighten
-   一起把整张壁纸连暗部都提亮成灰白。固定成中性色后壁纸才是本色。
+   真背景模式下壁纸（z-index:-1）正是画在它上面：透明度、混合模式都以它为基准，
+   取中性色壁纸才是本色（换成主题的偏色底色，壁纸会被染上一层）。
    底色只体现在「被透明化的那些表面」后面，弹窗/菜单有自己不透明的底色，不受影响。 */
 body.bgc-transparent-theme {
 	--bgc-base: #000;
@@ -179,12 +213,19 @@ body.bgc-transparent-theme.theme-light {
 }
 /* 底色本身也要用最高特异性写：写成 body.bgc-transparent-theme（0,1,1）会与主题里
    body.theme-dark { background: … }（同为 0,1,1）打平，胜负变成由加载顺序决定。
-   这里带上主题类，压过任何单类名的 body 规则。 */
+   这里带上主题类，压过任何单类名的 body 规则。
+
+   底色**只画在 body 上**：真背景模式下壁纸（z-index:-1）就画在 body 底色之上、
+   .app-container 之下，所以 .app-container 必须是透明的——核心对它本来就不铺底色
+   （app.css 里只有 flex 与尺寸），是插件自己加过一层，这里必须改回透明，
+   否则这一层会整块盖住壁纸。 */
 body.theme-dark.bgc-transparent-theme,
-body.theme-light.bgc-transparent-theme,
+body.theme-light.bgc-transparent-theme {
+	background-color: var(--bgc-base);
+}
 body.theme-dark.bgc-transparent-theme .app-container,
 body.theme-light.bgc-transparent-theme .app-container {
-	background-color: var(--bgc-base);
+	background-color: transparent;
 }
 /* 兜底：万一主题让 body 没铺满视口，html 也别露出窗口底色。
    :has() 不可用时整条规则被丢弃，不影响上面的效果。 */
@@ -216,8 +257,12 @@ body.bgc-transparent-theme.is-focused .workspace-leaf.mod-active .view-header {
 }
 
 /* 窗口背景条：状态栏与标题栏也在 .workspace 之外，需要单独处理，否则壁纸在这两条
-   上会因为底色不同而出现色带。标题栏的底色主要由上面的 --titlebar-background 解决，
-   这里再兜一层，防止主题把 background-color 写死在 .titlebar 上。
+   上会因为底色不同而出现色带（真背景模式下则是被它们整条挡住）。标题栏的底色主要
+   由上面的 --titlebar-background 解决，这里再兜一层，防止主题把 background-color
+   写死在 .titlebar 上。
+   无边框 Windows/Linux 下核心自己也把 .titlebar 写成 background: transparent
+   （app.css: .is-hidden-frameless…mod-windows .titlebar），所以这两条只在有边框
+   窗口或主题写死颜色时才真正起作用。
    **不想让它们跟着透明，删掉这两条规则即可。** */
 body.bgc-transparent-theme .status-bar,
 body.bgc-transparent-theme .titlebar {
@@ -226,7 +271,9 @@ body.bgc-transparent-theme .titlebar {
 /* 顶部那条：无边框模式下"标题栏"其实是标签栏（.workspace-tab-header-container），
    它的 border-bottom 取 --tab-outline-color（→ --divider-color），所以主题一透明就
    什么都没有。这里同时照顾两种窗口模式：标签栏与 .titlebar 各画一条。
-   （.titlebar 在 is-hidden-frameless 下高度为 0，不会多出一条线。） */
+   注意无边框 Windows/Linux 下核心给 .titlebar 写了 border: none，且它的选择器是
+   4 个类（.is-hidden-frameless:not(…)… .titlebar），比这条高——那一半在这种窗口
+   模式下画不出线，真正起作用的是标签栏那一条（有边框窗口下两半都生效）。 */
 body.bgc-transparent-theme.bgc-divider-titlebar .workspace-tab-header-container,
 body.bgc-transparent-theme.bgc-divider-titlebar .titlebar {
 	border-bottom: 1px solid var(--bgc-separator);
@@ -242,4 +289,80 @@ body.bgc-transparent-theme .workspace-leaf-content[data-type="bases"] {
 	--bases-cards-background: transparent;
 	--bases-cards-container-background: transparent;
 	--bases-cards-cover-background: transparent;
+}
+
+/* 文档内容里应当"透出壁纸"的排版元素：表格、公式块、引用块、代码。
+   它们本身不是界面面板，主题却常给它们铺一层不透明底色（Royal Velvet 就给表格行
+   做 --layer-1/--layer-2 交替底色、公式块与引用块铺 --layer-1，公式块还带两侧色条）。
+   叠加模式下壁纸压在最上面，看不出区别；壁纸沉到内容之下后，这些底色就变成一块块
+   挡住壁纸的色块——浅色主题下最明显（--layer-1/2 接近纯白，像垫了张白纸）。
+
+   ⚠ 特异性必须够高，否则会像最初那版一样"看着写了、实际没生效"：
+   这些底色常常是**实时预览**那条规则画出来的，主题用的是 4 个类，例如
+   Royal Velvet `.markdown-source-view.mod-cm6.is-live-preview .HyperMD-quote` (0,4,0)、
+   `.markdown-rendered tbody tr:nth-child(odd):hover` (0,3,2)。
+   只写 `body.bgc-transparent-theme .workspace …`（0,3,x）压不过它们，引用块会继续留底色。
+   所以前缀统一带上 `.workspace-leaf-content[data-type="markdown"] .view-content`：
+   前缀本身 4 个类，加上目标元素后从 (0,4,2) 起，实时预览与阅读视图两条路径都盖得住。
+
+   这里只清 **background-color**（表格另外去掉外框、换上浅色悬浮蒙层），
+   不动 background-image 与 border：
+   · 表头的渐变、公式块/引用块两侧的色条都保留；
+   · 清单以外的元素一律不碰（面板、按钮、输入框、callout、标签……），
+     也就是"原来有底色的不要改、原来没底色的不要加"这条原则的落地。
+
+   悬浮高亮要"浅色"而不是主题那种不透明深色块：深色主题下用白色蒙层、浅色主题下
+   轻微加深，两边都保证壁纸不被挡住。 */
+body.bgc-transparent-theme {
+	--bgc-hover: rgba(255, 255, 255, 0.12);
+}
+body.bgc-transparent-theme.theme-light {
+	--bgc-hover: rgba(0, 0, 0, 0.06);
+}
+body.bgc-transparent-theme
+	.workspace-leaf-content[data-type="markdown"]
+	.view-content
+	:is(.markdown-rendered, .cm-table-widget)
+	:is(table, thead, tbody, tr, td, th) {
+	background-color: transparent;
+}
+/* 表格外框：主题常用 outline 画一圈（Royal Velvet: `outline: 1px solid var(--layer-1)`），
+   也有主题改用 border。两种都去掉，表头渐变与单元格式样不受影响。 */
+body.bgc-transparent-theme
+	.workspace-leaf-content[data-type="markdown"]
+	.view-content
+	:is(.markdown-rendered, .cm-table-widget)
+	table {
+	outline: none;
+	border-color: transparent;
+}
+/* 悬浮行：不透明深色块 → 一层淡蒙层（见上面的 --bgc-hover） */
+body.bgc-transparent-theme
+	.workspace-leaf-content[data-type="markdown"]
+	.view-content
+	:is(.markdown-rendered, .cm-table-widget)
+	tbody
+	tr:hover {
+	background-color: var(--bgc-hover);
+}
+body.bgc-transparent-theme
+	.workspace-leaf-content[data-type="markdown"]
+	.view-content
+	:is(.math-block, mjx-container.MathJax) {
+	background-color: transparent;
+}
+/* 引用块：阅读视图是 blockquote，实时预览是逐行的 .HyperMD-quote */
+body.bgc-transparent-theme
+	.workspace-leaf-content[data-type="markdown"]
+	.view-content
+	:is(blockquote, .HyperMD-quote, .cm-blockquote-border, .callout-content blockquote) {
+	background-color: transparent;
+}
+/* 代码：行内 code 与围栏代码块（阅读视图 pre/code，实时预览逐行的 .HyperMD-codeblock）
+   都走核心的 --code-background；这里连元素一起点名，主题用固定色写死时也压得住。 */
+body.bgc-transparent-theme
+	.workspace-leaf-content[data-type="markdown"]
+	.view-content
+	:is(code, pre, .cm-inline-code, .HyperMD-codeblock, .cm-preview-code-block, .cm-hmd-codeblock) {
+	background-color: transparent;
 }

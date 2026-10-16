@@ -56,6 +56,17 @@ function isSupportedImage(name: string): boolean {
 }
 
 /**
+ * 取路径最后一段（文件名）。
+ * 自己按两种分隔符切，而不是用 `path.basename`：Windows 上 `path.basename` 认 `\`，
+ * 但用户从别处粘贴、或插件被拿到别的平台上时可能给出 `/` 形式的路径。
+ */
+export function fileNameOf(filePath: string): string {
+	const trimmed = filePath.replace(/[\\/]+$/, "");
+	const index = Math.max(trimmed.lastIndexOf("\\"), trimmed.lastIndexOf("/"));
+	return index >= 0 ? trimmed.slice(index + 1) : trimmed;
+}
+
+/**
  * 递归扫描文件夹下的图片文件（深度优先，目录按字母序保证结果稳定）。
  * 只返回文件绝对路径，忽略子目录与不可读条目；空/不存在/非目录返回 []。
  */

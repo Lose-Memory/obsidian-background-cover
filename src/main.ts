@@ -14,13 +14,15 @@ import { Notice, Plugin } from "obsidian";
 import { BackgroundLayer, createImageObjectUrl } from "./background";
 import { toRgbaColor } from "./css";
 import { collectDiagnostics } from "./diagnostics";
-import { expandPathVariables, isDirectory, listImagesInFolder, ShufflePlaylist } from "./folder";
+import { expandPathVariables, fileNameOf, isDirectory, listImagesInFolder, ShufflePlaylist } from "./folder";
 import { t } from "./i18n";
 import { BackgroundCoverSettingTab, BgcSettings, DEFAULT_SETTINGS } from "./settings";
 
 /**
  * 「与主题配合」相关类名（样式定义在 styles.css）。
  * 这些是插件唯一会覆盖主题背景颜色的功能，默认关闭；具体子项见设置页。
+ * 注意 bgc-transparent-theme 同时决定壁纸的层级：加上它以后，壁纸会从"盖在内容之上"
+ * 切换成"沉到内容之下"（真背景模式，只与 body 底色合成），说明见 styles.css。
  */
 const THEME_TRANSPARENT_CLASS = "bgc-transparent-theme";
 const DIVIDER_TITLEBAR_CLASS = "bgc-divider-titlebar";
@@ -297,6 +299,32 @@ export default class BackgroundCoverPlugin extends Plugin {
 		} catch (error) {
 			// 剪贴板不可用时把内容并进错误输出，用户仍可从控制台取到完整报告
 			console.error(`[BackgroundCover] Clipboard unavailable; diagnostics:\n${report}`, error);
+			new Notice(t("notice.copyFailed"));
+		}
+	}
+
+	/**
+	 * 复制「当前显示的那张图」的文件名到剪贴板（设置页「复制文件名」按钮）。
+	 *
+	 * 只复制文件名、不复制完整路径：文件名足够让用户在图库文件夹里找到同一张图，
+	 * 而完整路径属于本机信息——随手截图或贴给别人时会顺带泄露目录结构
+	 * （诊断报告里那行 background.imageFolder 就是为此要用户删掉）。
+	 *
+	 * 取的是背景层上真正在显示的那张（不是持久化记录）：自动轮播期间点这一下，
+	 * 拿到的就是此刻屏幕上的图。
+	 */
+	async copyCurrentImageName(): Promise<void> {
+		const current = this.layer?.getCurrentPath();
+		if (!current) {
+			new Notice(t("notice.noCurrentImage"));
+			return;
+		}
+		const name = fileNameOf(current);
+		try {
+			await navigator.clipboard.writeText(name);
+			new Notice(t("notice.copiedName", { name }));
+		} catch (error) {
+			console.error("[BackgroundCover] Clipboard unavailable:", error);
 			new Notice(t("notice.copyFailed"));
 		}
 	}

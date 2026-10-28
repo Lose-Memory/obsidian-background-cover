@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-background-cover",
-	"version": "1.2.0",
-	"description": "Customize the app background with local image folders. Two switchable playlists; only loads the currently used image into memory; supports folders outside the vault; fixed-interval auto rotation; aspect-ratio filtering and an adjustable vertical position for portrait images; does not modify theme variables.",
+	"version": "1.2.1",
+	"description": "Customize the app background with local image folders: two switchable playlists, one image in memory at a time, folders outside the vault supported, auto rotation, and aspect-ratio filtering with portrait framing. Does not modify theme variables.",
 	"author": "Lose-Memory",
 	"main": "main.js",
 	"type": "module",

@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-10-28
+
+### Fixed
+
+- **The plugin description is now within the directory's 250-character limit.** The 1.2.0 text was 322 characters, so the release review failed on `manifest.json` alone; the wording now says the same things in 246 characters, and `package.json` carries the identical string.
+
 ## [1.2.0] - 2026-10-28
 
 ### Added

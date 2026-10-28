@@ -1,9 +1,9 @@
 {
 	"id": "background-cover",
 	"name": "Background Cover",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"minAppVersion": "1.13.0",
-	"description": "Customize the app background with local image folders: two switchable playlists, only the currently used image is loaded into memory, folders outside the vault are supported, fixed-interval auto rotation, and aspect-ratio filtering with an adjustable vertical position for portrait images. Does not modify theme variables.",
+	"description": "Customize the app background with local image folders: two switchable playlists, one image in memory at a time, folders outside the vault supported, auto rotation, and aspect-ratio filtering with portrait framing. Does not modify theme variables.",
 	"author": "Lose-Memory",
 	"authorUrl": "https://github.com/Lose-Memory",
 	"isDesktopOnly": true

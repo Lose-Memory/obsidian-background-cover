@@ -4,7 +4,7 @@ Thanks for taking the time to help. This plugin reads image files from folders t
 
 ## Before you start
 
-- **Bug reports** — please use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml). It asks for the output of **Copy diagnostics**, which is by far the most useful thing you can attach; most problems in this plugin are environment- or theme-specific and cannot be reproduced without it.
+- **Bug reports** — please use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml). It asks for the developer console output and your settings, which is by far the most useful thing you can attach; most problems in this plugin are environment- or theme-specific and cannot be reproduced without it.
 - **Larger changes** — open an issue first so we can agree on the approach before you write code.
 
 ## Requirements
@@ -27,14 +27,14 @@ npm run lint     # ESLint (eslint-plugin-obsidianmd)
 
 ```
 src/
-  main.ts         # plugin lifecycle, commands, status bar, folder scan cache
+  main.ts         # plugin lifecycle, commands, status bar, folder scan cache, scan coordination
   background.ts   # the background layer: two image layers, blob URLs, blend classes
   settings.ts     # settings interface, defaults and the settings tab
   i18n.ts         # UI strings (English + Chinese) and language selection
   css.ts          # size-mode → CSS mapping, colour helpers
   folder.ts       # path expansion, recursive scan, shuffle playlist
-  theme.ts        # the dark-theme guard (appearance API it uses, and why)
-  diagnostics.ts  # the "Copy diagnostics" report
+  imageSize.ts    # image dimensions from the file header (no decoding)
+  imageIndex.ts   # on-disk size cache, aspect ratio helpers
 styles.css        # all styling; every class is prefixed bgc-
 manifest.json     # plugin manifest (id: background-cover)
 ```
@@ -66,7 +66,7 @@ These come from Obsidian's [Developer policies](https://docs.obsidian.md/communi
 - `ZH` is typed as `Record<BgcKey, string>`, so adding a key to `EN` without adding it to `ZH` is a **compile error**. Add both.
 - The language follows Obsidian's own setting via `getLanguage()`; Chinese installs get Chinese, everything else falls back to English.
 - Follow Obsidian's UI style: sentence case, action-oriented wording, no jargon.
-- `src/diagnostics.ts` is intentionally **English-only** — that report gets pasted into issues.
+- Console messages (`console.error`, not user-visible) are kept in English so they can be pasted into an issue as-is.
 
 ## Verification
 
@@ -76,11 +76,11 @@ In practice this means: if you change rendering, blend modes, z-index or the the
 
 ## Releasing (maintainers)
 
-Problems noticed while using the plugin are captured in a local, untracked `TODO.md` at the repository root. It is listed in `.gitignore` and is deliberately **not** committed: a pasted diagnostics report contains the maintainer's own wallpaper folder path, and that is not something to publish. Contributors will not have this file — it is a maintainer's notebook, not a project artifact.
+Two local files drive this, both untracked: `TODO.md` is a plain list of things that still need doing — nothing else, no template, no status columns — and `需求记录.md` is the append-only record of *why* each change was made (the request, the decision, and what was actually done about it). Keeping the history local is deliberate: a pasted report or a note about a specific wallpaper folder is not something to publish, while a fixed TODO list stays useful only if it is short. Contributors will have neither file — they are a maintainer's notebook, not project artifacts.
 
-1. Triage `TODO.md` first. Fill in the trigger conditions on the "待处理" entries, set a priority, merge anything that is really one problem, and move whatever you have decided not to do into "不做 / 暂缓" with a reason.
+1. Work through `TODO.md` and delete each line as it is fixed; anything that needs its reasoning preserved gets an entry in `需求记录.md` instead.
 2. `npm version <x.y.z>` — the `version` script updates `manifest.json` and `versions.json`. `.npmrc` sets `tag-version-prefix=""`, so the tag is the bare version with no `v` prefix.
-3. Write the [`CHANGELOG.md`](CHANGELOG.md) entry, taking the wording from the "已修复，待随版本发布" section of `TODO.md`, then delete those entries. Deriving the changelog from a list rather than from memory is the whole point of step 1 — this step is easy to skip, and 1.0.1 was released without an entry.
+3. Write the [`CHANGELOG.md`](CHANGELOG.md) entry from the matching section of `需求记录.md` — taking the wording from a written record rather than from memory is the whole point; 1.0.1 was released without an entry.
 4. Push the tag. The release workflow refuses to publish if the tag does not match the `version` in `manifest.json`.
 
 After the first release, routine updates only need a new release whose tag matches the manifest version — the community directory picks it up.

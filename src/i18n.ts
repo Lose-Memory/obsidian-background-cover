@@ -8,8 +8,6 @@
  * 约定：
  * - 英文是默认与回退语言，新增文案先写 `EN`；`ZH` 用 `Record<BgcKey, string>`
  *   声明，漏写任何一条 key 都会编译失败，不会出现「某个键忘了翻译」的静默回退。
- * - `diagnostics.ts` 里的诊断报告**刻意不走这里**：它是贴到 issue 里给别人看的，
- *   固定英文更通用（见该文件头部注释）。
  */
 import { getLanguage } from "obsidian";
 
@@ -20,35 +18,59 @@ const EN = {
 	// ---- 命令与通知 ----
 	"cmd.random": "Change background",
 	"cmd.toggle": "Toggle background",
-	"cmd.diagnostics": "Copy diagnostics",
+	"cmd.switchPlaylist": "Switch playlist",
 	"notice.noImages": "The background folder is empty or the path is invalid.",
 	"notice.loadFailed": "Failed to load the background image: {message}",
-	"notice.copied": "Diagnostics copied to the clipboard.",
-	"notice.copyFailed": "Copy failed. See the developer console for the full report.",
+	"notice.copyFailed": "Copy failed. See the developer console for details.",
 	"notice.copiedName": "Copied file name: {name}",
 	"notice.noCurrentImage": "No background image is showing right now.",
+	"notice.playlistSwitched": "Switched to {name}.",
+	"notice.scanDone": "Measured {count} images.",
 
 	// ---- 设置：总开关 ----
 	"settings.enable.name": "Enable background",
 	"settings.enable.desc":
-		"Show or hide the background image. Turning this off only hides the background layer; no theme setting is changed.",
+		"Show or hide the background image. Turning this off removes everything the plugin adds, including the theme transparency and divider overrides; it does not change your theme setting.",
 
-	// ---- 设置：图片来源 ----
-	"settings.source.heading": "Image source",
-	"settings.folder.name": "Background folder",
+	// ---- 设置：播放列表 ----
+	"settings.playlist.heading": "Playlists",
+	"settings.playlist.a": "Playlist A",
+	"settings.playlist.b": "Playlist B",
+	"settings.activePlaylist.name": "Active playlist",
+	"settings.activePlaylist.desc":
+		"The playlist that the status bar button, the change background command and auto rotation take images from. Each playlist keeps its own folder, playback order and current image.",
+	"settings.folder.name": "Folder ({playlist})",
 	"settings.folder.desc":
 		"Absolute path of an image folder. Supports ~ (home directory) and environment variables, and may point outside your vault, for example d:\\wallpapers.",
 	"settings.folder.placeholder": "For example d:\\wallpapers",
-	"settings.count.name": "Image count",
-	"settings.count.desc":
-		"The folder is scanned after you enter a path. Only file names are counted; images are never loaded into memory. Copy file name copies the name of the image that is showing right now.",
-	"settings.rescan": "Rescan",
-	"settings.copyName": "Copy file name",
 	"settings.folderInfo.empty": "No folder path set.",
 	"settings.folderInfo.invalid":
 		"The path is invalid or is not a folder. Supported: absolute paths, ~, and environment variables.",
+	"settings.folderInfo.active": "In use · ",
 	"settings.folderInfo.count": "{count} images (file names only, no memory cost)",
-	"settings.folderInfo.current": "; showing {path}",
+	"settings.folderInfo.filtered": "{count} of {total} images (aspect ratio filter)",
+	"settings.folderInfo.current": " · showing {path}",
+
+	// ---- 设置：尺寸扫描（按宽高比筛选的前提） ----
+	"settings.scan.name": "Image sizes",
+	"settings.scan.desc":
+		"Measure width, height and aspect ratio of every image in the active playlist's folder. Only the file header is read, images are never decoded, and the results are cached, so rescanning re-reads only new or changed files. Required before the aspect ratio filter can work.",
+	"settings.scan.button": "Scan",
+	"settings.scan.noFolder": "Set a folder path first.",
+	"settings.scan.idle": "Not scanned yet. Scan to enable the aspect ratio filter.",
+	"settings.scan.progress": "Scanning {done}/{total}…",
+	"settings.scan.summary":
+		"{measured} of {total} images measured: {landscape} landscape, {portrait} portrait.",
+	"settings.scan.unknown": " {count} could not be measured.",
+
+	// ---- 设置：长宽比 ----
+	"settings.aspect.heading": "Aspect ratio",
+	"settings.filterByAspect.name": "Only use images at or above the aspect ratio",
+	"settings.filterByAspect.desc":
+		"Width ÷ height. At 1.3 only landscape images (4:3 and wider) are used as backgrounds. Images whose size is not known yet are skipped, so run a scan first.",
+	"settings.aspectThreshold.name": "Aspect ratio threshold",
+	"settings.aspectThreshold.desc":
+		"Width ÷ height, default 1.3 (about 4:3). Also decides which images count as portrait for the vertical position setting below.",
 
 	// ---- 设置：外观 ----
 	"settings.appearance.heading": "Appearance",
@@ -65,12 +87,15 @@ const EN = {
 	"settings.transition.name": "Fade transition",
 	"settings.transition.desc":
 		"Crossfade smoothly when the image changes. Respects the system reduce motion setting.",
+	"settings.portraitPosition.name": "Portrait image vertical position",
+	"settings.portraitPosition.desc":
+		"0 shows the top of a portrait image, 100 the bottom, 50 the middle (default). Only applies to images below the aspect ratio threshold, and only in cover size mode; landscape images are never moved.",
 
 	// ---- 设置：与主题配合 ----
 	"settings.theme.heading": "Theme integration",
 	"settings.transparent.name": "Make theme background transparent",
 	"settings.transparent.desc":
-		"Make the workspace and sidebar backgrounds transparent and drop the wallpaper below the interface, so the two stop blending into each other (bright interface elements no longer show through the image on dark themes, and the image is no longer veiled by the base color on light themes). This is the only feature that overrides theme colors, and it is off by default. When on, the workspace base color becomes pure black (dark themes) or pure white (light themes) and the opacity setting fades the image toward it; menus, notices and modals are unaffected.",
+		"Make the workspace and sidebar backgrounds transparent and drop the wallpaper below the interface, so the two stop blending into each other (bright interface elements no longer show through the image on dark themes, and the image is no longer veiled by the base color on light themes). This is the only feature that overrides theme colors, and it is off by default. When on, the workspace base color becomes pure black (dark themes) or pure white (light themes) and the opacity setting fades the image toward it; menus, notices and modals are unaffected. Turning off enable background also turns this off.",
 	"settings.titlebarDivider.name": "Title bar divider",
 	"settings.titlebarDivider.desc":
 		"Draw a thin line between the title bar and the workspace below it. Themes often set Obsidian's divider color to transparent. Requires make theme background transparent.",
@@ -99,6 +124,10 @@ const EN = {
 	"settings.shuffle.name": "Change background now",
 	"settings.shuffle.desc": "Take the next image from the folder and apply it immediately.",
 	"settings.shuffle.button": "Change now",
+	"settings.copyName.name": "Copy current file name",
+	"settings.copyName.desc":
+		"Put the file name (not the full path) of the image that is on screen right now on your clipboard.",
+	"settings.copyName.button": "Copy file name",
 
 	// ---- 尺寸模式选项 ----
 	"size.cover": "cover (fill, keeps aspect ratio)",
@@ -126,33 +155,57 @@ const ZH: Record<BgcKey, string> = {
 	// ---- 命令与通知 ----
 	"cmd.random": "更换背景",
 	"cmd.toggle": "启用或停用背景",
-	"cmd.diagnostics": "复制诊断信息",
+	"cmd.switchPlaylist": "切换播放列表",
 	"notice.noImages": "背景文件夹为空或路径无效。",
 	"notice.loadFailed": "背景加载失败：{message}",
-	"notice.copied": "诊断信息已复制到剪贴板。",
-	"notice.copyFailed": "复制失败，请从开发者控制台查看完整报告。",
+	"notice.copyFailed": "复制失败，请从开发者控制台查看详情。",
 	"notice.copiedName": "已复制文件名：{name}",
 	"notice.noCurrentImage": "当前没有显示中的背景图。",
+	"notice.playlistSwitched": "已切换到{name}。",
+	"notice.scanDone": "已扫描 {count} 张图片。",
 
 	// ---- 设置：总开关 ----
 	"settings.enable.name": "启用背景",
-	"settings.enable.desc": "开关背景图片显示。关闭时只停用背景层，不修改任何主题设置。",
+	"settings.enable.desc":
+		"开关背景图片显示。关闭时会一并退出本插件带来的全部影响（包括主题透明化与分隔线覆盖），但不修改你的主题设置。",
 
-	// ---- 设置：图片来源 ----
-	"settings.source.heading": "图片来源",
-	"settings.folder.name": "背景文件夹",
+	// ---- 设置：播放列表 ----
+	"settings.playlist.heading": "播放列表",
+	"settings.playlist.a": "播放列表 A",
+	"settings.playlist.b": "播放列表 B",
+	"settings.activePlaylist.name": "当前播放列表",
+	"settings.activePlaylist.desc":
+		"状态栏按钮、更换背景命令与自动轮播都从这个列表取图。两个列表各自保存文件夹、播放顺序和当前这张图。",
+	"settings.folder.name": "文件夹（{playlist}）",
 	"settings.folder.desc":
-		"图片文件夹的绝对路径，支持 ~（用户目录）与环境变量；可位于 Obsidian 仓库之外，例如 d:\\wallpapers。",
+		"图片文件夹的绝对路径，支持 ~（用户目录）与环境变量；可位于仓库之外，例如 d:\\wallpapers。",
 	"settings.folder.placeholder": "例如 d:\\wallpapers",
-	"settings.count.name": "图片数量",
-	"settings.count.desc":
-		"填写路径后自动扫描，只统计文件名，不会把图片读入内存。「复制文件名」复制当前正在显示的那张图的文件名。",
-	"settings.rescan": "重新扫描",
-	"settings.copyName": "复制文件名",
 	"settings.folderInfo.empty": "未填写文件夹路径。",
 	"settings.folderInfo.invalid": "路径无效或不是文件夹，请检查（支持绝对路径 / ~ / 环境变量）。",
+	"settings.folderInfo.active": "使用中 · ",
 	"settings.folderInfo.count": "共 {count} 张图片（仅文件名列表，不占内存）",
-	"settings.folderInfo.current": "；当前：{path}",
+	"settings.folderInfo.filtered": "共 {total} 张，按长宽比筛后剩 {count} 张",
+	"settings.folderInfo.current": " · 当前：{path}",
+
+	// ---- 设置：尺寸扫描 ----
+	"settings.scan.name": "图片尺寸",
+	"settings.scan.desc":
+		"统计当前播放列表文件夹中每张图的宽、高与长宽比。只读文件头、不解码整图，结果会缓存，重新扫描只读取新增或改动过的文件。按长宽比筛选前需要先扫描一次。",
+	"settings.scan.button": "扫描",
+	"settings.scan.noFolder": "请先填写文件夹路径。",
+	"settings.scan.idle": "尚未扫描。扫描后才能使用按长宽比筛选。",
+	"settings.scan.progress": "正在扫描 {done}/{total}…",
+	"settings.scan.summary": "已统计 {measured}/{total} 张：横向 {landscape} 张，纵向 {portrait} 张。",
+	"settings.scan.unknown": "另有 {count} 张无法识别尺寸。",
+
+	// ---- 设置：长宽比 ----
+	"settings.aspect.heading": "长宽比",
+	"settings.filterByAspect.name": "只用长宽比不小于阈值的图片",
+	"settings.filterByAspect.desc":
+		"宽 ÷ 高。设为 1.3 时只有横向图（4:3 及更宽）会被用作背景。尚未扫描到尺寸的图会被跳过，请先扫描。",
+	"settings.aspectThreshold.name": "长宽比阈值",
+	"settings.aspectThreshold.desc":
+		"宽 ÷ 高，默认 1.3（约 4:3）。它同时决定下面「纵向图垂直位置」把哪些图当作纵向图。",
 
 	// ---- 设置：外观 ----
 	"settings.appearance.heading": "外观",
@@ -167,12 +220,15 @@ const ZH: Record<BgcKey, string> = {
 		"auto 随深浅主题自动切换混合方式；multiply / lighten 为固定模式。仅在壁纸位于界面之上时生效；开启「让主题背景透明」后壁纸就是背景层，没有可混合的对象。",
 	"settings.transition.name": "淡入淡出过渡",
 	"settings.transition.desc": "换图时平滑过渡，尊重系统的「减少动态效果」设置。",
+	"settings.portraitPosition.name": "纵向图垂直位置",
+	"settings.portraitPosition.desc":
+		"0 显示图片顶部，100 显示底部，50 为中间（默认）。只对长宽比低于阈值的纵向图生效，且仅在 cover 尺寸模式下；横向图不做任何位移。",
 
 	// ---- 设置：与主题配合 ----
 	"settings.theme.heading": "与主题配合",
 	"settings.transparent.name": "让主题背景透明",
 	"settings.transparent.desc":
-		"把工作区、侧边栏的不透明背景色改为透明，并让壁纸沉到界面之下：界面与壁纸不再互相混色（深色主题下界面亮部不再透到图上，浅色主题下图像不再被底色蒙白）。这是本插件唯一会覆盖主题背景颜色的功能，默认关闭；开启后工作区底色为纯黑（深色主题）或纯白（浅色主题），壁纸按「背景透明度」往它淡化，菜单/提示/弹窗不受影响。",
+		"把工作区、侧边栏的不透明背景色改为透明，并让壁纸沉到界面之下：界面与壁纸不再互相混色（深色主题下界面亮部不再透到图上，浅色主题下图像不再被底色蒙白）。这是本插件唯一会覆盖主题背景颜色的功能，默认关闭；开启后工作区底色为纯黑（深色主题）或纯白（浅色主题），壁纸按「背景透明度」往它淡化，菜单/提示/弹窗不受影响。关闭「启用背景」时它也会一并退出。",
 	"settings.titlebarDivider.name": "标题栏分隔线",
 	"settings.titlebarDivider.desc":
 		"在标题栏与下方工作区之间画一条细线（主题常把 Obsidian 的分隔线设成透明）。需先开启「让主题背景透明」。",
@@ -200,6 +256,9 @@ const ZH: Record<BgcKey, string> = {
 	"settings.shuffle.name": "随机换一张",
 	"settings.shuffle.desc": "立即从文件夹中取下一张图片并应用。",
 	"settings.shuffle.button": "随机换一张",
+	"settings.copyName.name": "复制当前文件名",
+	"settings.copyName.desc": "把此刻屏幕上那张图的文件名（不含完整路径）复制到剪贴板。",
+	"settings.copyName.button": "复制文件名",
 
 	// ---- 尺寸模式选项 ----
 	"size.cover": "cover（铺满，保持比例）",

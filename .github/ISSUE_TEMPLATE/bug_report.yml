@@ -9,22 +9,28 @@ body:
           value: |
               Thanks for taking the time to report a problem.
 
-              The single most useful thing you can attach is the output of the **Copy diagnostics** command. Most issues with this plugin depend on your theme, your Obsidian version and your window mode, and cannot be reproduced without it.
+              The single most useful thing you can attach is the **developer console output**. Most issues with this plugin depend on your theme, your version and your window mode, and the console usually names the cause.
 
     - type: textarea
-      id: diagnostics
+      id: console-log
       attributes:
-          label: Diagnostics report
+          label: Console output
           description: |
-              In Obsidian, open the command palette and run **Background Cover: Copy diagnostics**, then paste the result here.
-              (The command name is localised; in a Chinese install it is **复制诊断信息**.)
+              In the app, open **Help → Toggle developer tools → Console**, reproduce the problem, and paste anything in red here. If nothing is logged, say so — "no errors" is useful information too.
           render: text
           placeholder: |
-              ===== Background Cover diagnostics =====
-              Plugin version: 1.0.0
-              ...
+              Uncaught TypeError: ...
       validations:
-          required: true
+          required: false
+
+    - type: textarea
+      id: settings
+      attributes:
+          label: Background Cover settings
+          description: |
+              Paste the relevant settings from **Settings → Background Cover** (folders, size mode, blend mode, opacity, aspect ratio filter and threshold). If the problem involves a specific image, say whether it is portrait or landscape — and, if you have run a **Scan**, the numbers it reports.
+      validations:
+          required: false
 
     - type: textarea
       id: what-happened
@@ -50,7 +56,7 @@ body:
       id: obsidian-version
       attributes:
           label: Obsidian version
-          description: Found in **Settings → General → Current version**, or in the diagnostics report.
+          description: Found in **Settings → General → Current version**.
           placeholder: '1.13.0'
       validations:
           required: true
@@ -59,8 +65,8 @@ body:
       id: plugin-version
       attributes:
           label: Background Cover version
-          description: Found in **Settings → Community plugins**, or in the diagnostics report.
-          placeholder: '1.0.0'
+          description: Found in **Settings → Community plugins**.
+          placeholder: '1.2.0'
       validations:
           required: true
 
@@ -100,7 +106,7 @@ body:
       id: window-mode
       attributes:
           label: Window mode
-          description: The frameless window setting affects the title bar's z-index, which changes whether the wallpaper shows behind it.
+          description: The frameless window setting affects the title bar, which changes whether the wallpaper shows behind it.
           options:
               - Frameless window (default on Windows and Linux)
               - Native window frame
@@ -117,5 +123,5 @@ body:
                 required: true
               - label: I searched the existing issues and this has not been reported yet.
                 required: true
-              - label: I have attached the full diagnostics report above.
+              - label: I have pasted the console output above, or confirmed that nothing is logged.
                 required: true

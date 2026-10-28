@@ -16,8 +16,9 @@ The background model — opacity, blur, size modes, blend modes and the folder-b
 
 ## Features
 
-**Local folder as the image source**
+**Two local folders you can switch between**
 
+- **Playlist A** and **Playlist B**, each with its own folder, its own playback order and its own current image — switching playlists switches the whole wallpaper set, and the current image of the other playlist is remembered
 - Works with folders **outside** your vault (for example `d:\wallpapers`)
 - Supports `~` (home directory) and `${ENV}` / `$ENV` environment variables
 - Recursively scans subfolders and recognises png / jpg / jpeg / gif / bmp / webp / svg / jfif / avif
@@ -85,12 +86,16 @@ Open **Settings → Background Cover**.
 
 | Setting | Description |
 | --- | --- |
-| Enable background | Master switch. Turning it off only hides the background layer; no theme setting is changed. |
-| Background folder | Absolute path to an image folder. Supports `~` and environment variables, and may point outside your vault. The folder is scanned as soon as you enter a path. |
-| Image count | Shows how many images were found. **Rescan** re-reads the folder and reshuffles the playback list. **Copy file name** puts the file name of the image that is on screen right now on your clipboard (the name only — not the full path). |
+| Enable background | Master switch. Turning it off removes **everything** the plugin adds — the background layer, theme transparency and both dividers — and does not change any theme setting of its own. |
+| Active playlist | Which of the two playlists the background, the status bar button, **Change background** and auto rotation take images from. |
+| Folder (Playlist A) / Folder (Playlist B) | One absolute image path per playlist. Supports `~` and environment variables, and may point outside your vault. The folder is scanned as soon as you enter a path. |
+| Image sizes | **Scan** reads the header of every image in the active playlist's folder, reports how many are landscape / portrait at the current threshold, and caches the result. Only headers are read — no image is decoded — and a rescan re-reads only new or changed files. |
+| Only use images at or above the aspect ratio | Filter the folder down to images wider than the threshold, so a mixed folder never shows a cropped vertical shot. Images whose size is unknown are skipped, so run a scan first (turning the filter on starts one automatically). |
+| Aspect ratio threshold | Width ÷ height, default 1.3 (about 4:3). It also defines which images count as portrait for the vertical position below. |
 | Background opacity | Opacity of the background layer, 0 – 0.8 (default 0.2). |
 | Background blur | Blur radius in pixels, 0 – 100 (default 0). |
 | Size mode | `cover` (fill, keeps aspect ratio) / `contain` (stretch to fill, distorts) / `center` (scale to fit, centered) / `repeat` (tile) / natural-size positions. |
+| Portrait image vertical position | 0 shows the top of a portrait image, 100 the bottom, 50 the middle (default). Only images below the aspect ratio threshold are moved, and only in `cover` mode — a landscape image is never repositioned. |
 | Blend mode | `auto` (follows the theme) / `multiply` / `lighten`. Only applies while the wallpaper is an overlay (theme transparency off); once it is the background layer there is nothing left to blend with. |
 | Fade transition | Crossfade smoothly when the image changes (on by default). |
 | Make theme background transparent | Makes the theme's opaque background colors transparent **and drops the wallpaper below the interface**, so the UI and the image stop blending into each other. **The only feature that overrides theme colors**, off by default — see below. |
@@ -101,15 +106,14 @@ Open **Settings → Background Cover**.
 | Change image on startup | When on, a random image is picked on every launch. When off (default), the image from your last session is restored. |
 | Enable auto rotation | Change the background at a fixed interval, off by default. |
 | Rotation interval (seconds) | Interval between automatic changes, minimum 5 seconds. |
-| Change background now | Immediately take the next image from the folder. |
+| Change background now | Immediately take the next image from the active playlist. |
+| Copy file name | Puts the file name of the image that is on screen right now on your clipboard — the name only, not the full path. |
 
 ### Commands
 
-- **Change background** — take the next image from the playback list
-- **Toggle background** — turn the background layer on or off
-- **Copy diagnostics** — copy a report of your runtime (Electron / Chromium version, `color-mix` and `backdrop-filter` support, theme variables, overlay DOM structure and computed styles) to the clipboard. If you hit a problem like "the divider does not show up" or "one area still looks different", run this first and attach the output to your issue.
-
-The diagnostics report is always in English so that it can be pasted into an issue as-is.
+- **Change background** — take the next image from the active playlist's playback list
+- **Switch playlist** — flip between Playlist A and Playlist B
+- **Toggle background** — turn the background layer on or off (this also turns theme transparency and the dividers off, so nothing the plugin adds stays behind)
 
 ### Status bar
 
@@ -120,9 +124,9 @@ A 🖼 button in the status bar changes the image with one click.
 "Random" is not an independent draw each time — it is a **shuffled playback list**:
 
 - All images in the folder are shuffled into a sequence. The command, the status bar button and auto rotation all take the next entry, so **every image appears exactly once per round**. With 5,000 images you would have to click 5,000 times to see a repeat.
-- The list is reshuffled when it is exhausted, when the folder path changes, or when you press **Rescan**.
-- **Rescan** only reshuffles and refreshes the count; the image currently on screen does not change. The new order applies from the next change.
-- Restarting Obsidian restores the image you were last showing and reshuffles. If the next entry happens to be that same image, the plugin skips to the one after it.
+- **Each playlist has its own list and its own position in it.** Switching to B picks up where B left off; switching back to A continues A's round rather than restarting it.
+- The list is reshuffled when it is exhausted, when the folder path changes, when the **aspect ratio** filter or threshold changes, and after a **Scan** (which can retire images that no longer pass the filter).
+- Restarting Obsidian restores the image you were last showing in each playlist. If the next entry happens to be that same image, the plugin skips to the one after it.
 - With **Change image on startup** enabled, a fresh image is drawn from the new list on every launch instead of restoring the previous one.
 
 > If your folder genuinely contains only 2–3 images, "no repeats within a round" will feel like cycling between them — that is a property of the library, not the plugin.
@@ -133,10 +137,10 @@ This section describes exactly what the plugin accesses and why. It is required 
 
 - **No network access at all.** The plugin makes no HTTP requests, downloads nothing, and has no online gallery.
 - **No telemetry, no analytics, no accounts.** Nothing about you or your vault ever leaves your machine.
-- **Reads image files from a folder you choose, which may be outside your vault.** This is the entire point of the plugin: your wallpaper collection usually lives somewhere like `d:\wallpapers`, not inside the vault. The plugin reads that folder's file names, then reads a single image file when it is displayed. It never writes to that folder, never deletes anything, and never scans folders you did not configure.
+- **Reads image files from a folder you choose, which may be outside your vault.** This is the entire point of the plugin: your wallpaper collection usually lives somewhere like `d:\wallpapers`, not inside the vault. The plugin reads that folder's file names, then reads a single image file when it is displayed. A **Scan** additionally reads the first bytes of each image to learn its size — the header only, never the pixels. It never writes to that folder, never deletes anything, and never scans folders you did not configure.
 - **You can point it at a folder inside the vault instead** if you prefer to keep everything in one place.
 - **Only file names and the one currently displayed image are held in memory.** Replaced images have their blob URL revoked immediately.
-- The one exception to "read-only" is the folder path itself, which is stored in the plugin's own `data.json` inside your vault, like any other plugin setting.
+- The exceptions to "read-only" are all inside the plugin's own folder in your vault: the settings in `data.json`, and `image-index.json` — the scan cache, a file name → width/height map used so a rescan only re-reads what changed. It contains no image data, and deleting it merely means the next scan starts from scratch.
 - **No remote code.** Nothing is fetched and evaluated at runtime; updates only arrive through normal plugin releases.
 
 ## Compatibility with themes
@@ -177,7 +181,10 @@ Turn on **Settings → Background Cover → Theme integration → Make theme bac
 ## How it works
 
 - **Layer structure.** A full-screen root container `.bgc-layer` (carrying `mix-blend-mode` and blur, whose properties stay **completely constant**) plus two image children `.bgc-layer-image` that crossfade by alternating `opacity`. The container is mounted on `document.body`, after `.app-container`. Its `z-index` and blend mode are decided purely in CSS by whether `body` has the `bgc-transparent-theme` class (overlay `z-index: 20` / real background `z-index: -1`), so switching the theme-transparency setting never touches the layer from JavaScript.
-- **Copying the current file name.** The settings button reads the path from the layer's own record of what it is displaying (`getCurrentPath()`), not from the persisted setting, so during auto rotation it always copies what is on screen at that moment. It copies the **file name only**: the name is enough to find the image in your folder, while a full path leaks your local directory layout into anything you paste it into (the same reason the diagnostics report highlights its `background.imageFolder` line).
+- **Copying the current file name.** The settings button reads the path from the layer's own record of what it is displaying (`getCurrentPath()`), not from the persisted setting, so during auto rotation it always copies what is on screen at that moment. It copies the **file name only**: the name is enough to find the image in your folder, while a full path leaks your local directory layout into anything you paste it into.
+- **Image sizes are parsed from the file header, never by decoding the image.** `imageSize.ts` reads at most 64 KB (1 MB for JPEG, which may keep its `SOF` marker far into the file) and interprets the PNG `IHDR`, JPEG `SOF`, GIF, BMP, WebP `VP8`/`VP8L`/`VP8X`, AVIF `ispe` or SVG width/height fields. Decoding thousands of wallpapers through an `<img>` or a canvas would cost seconds and hundreds of megabytes; parsing headers is a few milliseconds per hundred files.
+- **The scan is cached by path, mtime and size.** `image-index.json` lives in the plugin's own folder, so a rescan after adding five images reads five headers, not five thousand. The cache is keyed on absolute paths — moving the wallpaper folder therefore just means one new scan, not a corrupted index.
+- **The vertical position only applies where it is needed.** `resolveSizeModel()` computes `background-position` for the size mode and, when the image is portrait and the mode is `cover`, swaps the vertical half of the position for `center <n>%`. `cover` is the only mode that crops, so it is the only mode where moving the image does anything; the landscape path keeps the original `center` value verbatim.
 - **Why the blend mode sits on a parent that never animates.** An element with `mix-blend-mode` or `filter` is promoted to its own compositing layer while an `opacity` animation runs, and the blend mode degrades to `normal` — the whole screen flashes brighter and covers the UI at the moment of the switch. vscode-background-cover's A6 fix records this trap; this plugin split "blend mode + blur" and "crossfade" onto different elements accordingly.
 - **No deferred cleanup when switching.** The inactive child is already invisible at `opacity: 0`, and its `background-image` is kept until it is overwritten. An earlier version cleared the "old layer" with a 400 ms timer, which — when you clicked quickly — also wiped the image that had just become active, making the background disappear entirely. Fixed, and the plugin now uses no timers for this at all.
 - **Local images go through a blob URL, not a base64 data URL.** This one matters. The file is read and turned into a `blob:` URL (about 50 characters) written into the image layer's `--bgc-image` variable. **Do not switch this to `data:...;base64,...`**: that requires putting the whole image into an inline CSS declaration, and browsers impose a length limit on a single CSS declaration value. An over-long value is **silently discarded** — no error anywhere — after which `background-image: var(--bgc-image, none)` resolves to `none` and the background vanishes. Measured in Chromium: a 2 MB value survives intact, a 4 MB value makes `getPropertyValue()` return an empty string. A high-resolution wallpaper's base64 is routinely several to tens of MB, so the data URL approach manifests as "most images do nothing when clicked, and occasionally a small one works". A blob URL has no length limit and skips base64's 33% overhead.
@@ -204,13 +211,14 @@ Source layout:
 
 ```
 src/
-  main.ts         # plugin lifecycle, commands, status bar, folder scan cache
+  main.ts         # plugin lifecycle, commands, status bar, folder scan cache, scan coordination
   background.ts   # background layer: dual image layers, blob URLs, blend classes
   settings.ts     # settings interface, defaults and the settings tab
   i18n.ts         # UI strings (English + Chinese) and language selection
   css.ts          # size-mode → CSS mapping, colour helpers
   folder.ts       # path expansion, recursive scan, shuffle playlist
-  diagnostics.ts  # the "Copy diagnostics" report
+  imageSize.ts    # image dimensions from the file header (no decoding)
+  imageIndex.ts   # size cache on disk, aspect ratio helpers
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the constraints that apply to changes, the UI text rules and the release process.

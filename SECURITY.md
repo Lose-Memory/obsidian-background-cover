@@ -11,7 +11,7 @@ Only the latest release receives fixes. Please confirm the problem still reprodu
 - **Preferred:** report it privately through GitHub. Open the **Security** tab of this repository, then **Advisories → Report a vulnerability**. (This requires the maintainer to have private vulnerability reporting enabled; if the button is not available, use the fallback below.)
 - **Fallback:** contact the maintainer through <https://github.com/Lose-Memory>.
 
-Please include the Obsidian version, the plugin version, the operating system, and the shortest steps that reproduce the problem. The output of **Copy diagnostics** is useful here too.
+Please include the Obsidian version, the plugin version, the operating system, and the shortest steps that reproduce the problem. Anything the developer console logs while it happens is useful here too.
 
 This is a small, single-maintainer project, so please allow a few days for a reply.
 
@@ -22,7 +22,8 @@ This is the context you need to judge whether something is actually a vulnerabil
 - It reads image files from **one folder you configure**, plus its subfolders. That folder may live outside your vault. The plugin **never writes to it, never deletes anything, and never scans folders you did not configure**.
 - It makes **no network requests** and collects **no telemetry**. Nothing about you or your notes leaves your machine.
 - Images are loaded through `blob:` URLs, and each one is revoked as soon as it is replaced, so only the image currently on screen is held in memory.
-- The only thing it stores is its own settings, in `data.json` inside the plugin folder in your vault. That file contains the folder path you configured and your appearance settings — no file names, no vault contents.
+- **Scan** reads the first bytes of each configured image — the header only, never the pixels — to learn its dimensions. That result is cached next to the plugin's settings, in `image-index.json`: absolute file paths mapped to width, height, mtime and byte size. It contains no image data.
+- The only other thing it stores is its own settings, in `data.json` inside the plugin folder in your vault. That file contains the folder paths you configured and your appearance settings — no file names, no vault contents.
 - It does not execute remote code. Updates only arrive through normal plugin releases.
 
 ## Scope

@@ -8,8 +8,18 @@
  * 保证插件只添加背景层、与用户安装的主题互不干扰。
  */
 
-/** 尺寸模式 → background-size / repeat / position 映射。 */
-export function resolveSizeModel(model: string): {
+/**
+ * 尺寸模式 → background-size / repeat / position 映射。
+ *
+ * `portrait` 为 true 时（宽高比低于阈值的纵向图）只在 `cover` 下改写垂直位置：
+ * 纵向图铺满横屏显示器时上下会被裁掉，`center 0%` 保留顶部、`center 100%` 保留底部，
+ * 让用户能统一选择取景位置。横向图与其余尺寸模式一律沿用原来的取值，不做任何位移。
+ */
+export function resolveSizeModel(
+	model: string,
+	portrait = false,
+	portraitPositionY = 50
+): {
 	size: string;
 	repeat: string;
 	position: string;
@@ -64,7 +74,20 @@ export function resolveSizeModel(model: string): {
 			break;
 	}
 
+	// 纵向图在 cover 下的垂直取景位置（0 顶部 – 100 底部）；横向图与其它模式不位移
+	if (portrait && size === "cover") {
+		position = `center ${clampPercent(portraitPositionY)}%`;
+	}
+
 	return { size, repeat, position };
+}
+
+/** 把垂直取景位置夹到 0–100 并取整（滑块已限制范围，这里防脏数据）。 */
+export function clampPercent(value: number): number {
+	if (!Number.isFinite(value)) {
+		return 50;
+	}
+	return Math.min(100, Math.max(0, Math.round(value)));
 }
 
 /** 分隔线颜色的兜底值（设置里解析失败时使用）。 */

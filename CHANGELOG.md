@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-28
+
+### Added
+
+- **Two playlists.** **Settings → Background Cover → Playlists** now has a folder for **Playlist A** and one for **Playlist B**, plus an **Active playlist** dropdown. Each playlist keeps its own folder, its own playback order and its own current image, so switching playlists switches the whole wallpaper set, not just the folder. The command **Switch playlist** flips between them from the command palette. Users upgrading from 1.0–1.1 keep their folder and current image: they are read once into Playlist A.
+- **Scan** measures width, height and aspect ratio of every image in the active playlist's folder and reports the totals under the button. Only the file header is read — no image is ever decoded, so a folder of thousands of wallpapers is scanned in well under a second per hundred images — and the result is cached in the plugin folder (`image-index.json`), which makes a rescan re-read only new or changed files. Supported formats: PNG, JPEG, GIF, BMP, WebP, AVIF and SVG.
+- **Only use images at or above the aspect ratio.** Point at a folder of mixed orientations, set the threshold to 1.3 and only landscape images (4:3 and wider) are used as backgrounds. Images whose size is unknown are skipped, so the filter needs a scan first; turning it on for a folder that was never scanned triggers that scan automatically.
+- **Portrait image vertical position** (0–100, default 50). A portrait image cannot fill a landscape screen without losing its top or bottom, so its vertical framing is now adjustable: 0 keeps the top, 100 the bottom. It applies only to images below the aspect ratio threshold and only in `cover` size mode — landscape images are never moved.
+
+### Changed
+
+- **Image source** is now split across the two playlists; **Copy file name** moved to a setting of its own under **Actions**.
+- The **aspect ratio threshold** doubles as the definition of "portrait" for the vertical position setting, so the two features always agree on which images they act on.
+
+### Removed
+
+- **Copy diagnostics** and the whole diagnostics module. The report only ever contained information that is already visible in the developer console or in the settings themselves, and keeping it in step with new settings cost more than it was worth.
+
+### Fixed
+
+- **Turning off Enable background now really turns the plugin off.** Theme transparency and the two divider lines used to stay applied, so the interface kept looking modified with the background hidden — and the only way back was to disable the theme transparency option as well. Everything the plugin adds to the interface now follows the master switch, both from the settings page and from the **Toggle background** command.
+
 ## [1.1.0] - 2026-10-16
 
 ### Added
@@ -54,6 +76,7 @@ First public release.
 - The plugin makes no network requests and collects no telemetry.
 - The plugin does not modify theme CSS variables, except through the opt-in Make theme background transparent setting described above.
 
+[1.2.0]: https://github.com/Lose-Memory/obsidian-background-cover/releases/tag/1.2.0
 [1.1.0]: https://github.com/Lose-Memory/obsidian-background-cover/releases/tag/1.1.0
 [1.0.1]: https://github.com/Lose-Memory/obsidian-background-cover/releases/tag/1.0.1
 [1.0.0]: https://github.com/Lose-Memory/obsidian-background-cover/releases/tag/1.0.0

@@ -2,24 +2,42 @@
  * 插件设置：接口、默认值与设置页。
  *
  * 设置项与 vscode-background-cover 的 backgroundCover.* 配置对齐：
- * - imageFolder：背景图片文件夹（支持绝对路径 / ~ / 环境变量，可位于仓库外）
+ * - playlists：两个互相独立的播放列表，各有自己的文件夹与「当前这张图」
  * - opacity / blur / sizeModel / blendMode / transitionEnabled：外观
+ * - portraitPositionY：纵向图的垂直取景位置（横向图不位移）
+ * - filterByAspect / aspectThreshold：按宽高比筛选
  * - autoStatus / autoIntervalSeconds：固定间隔自动轮播
  * - randomizeOnStart：启动时随机换一张，而不是恢复上次那张
- * - currentImagePath：最近一次应用的单张图片（重启后恢复）
+ *
+ * 两个播放列表的意义：用户有两套不同用途的图库（例如「工作时用的清淡壁纸」和
+ * 「演示用的重色壁纸」），用命令面板一条命令就能整体切换，而不是每次改路径。
+ * 因此文件夹、不重复播放序列、当前图片三者都按列表各存一份。
  */
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, DropdownComponent, PluginSettingTab, Setting } from "obsidian";
 
-import type BackgroundCoverPlugin from "./main";
 import { isDirectory } from "./folder";
 import { blendModeOptions, sizeModelOptions, t } from "./i18n";
+import type BackgroundCoverPlugin from "./main";
+
+/** 播放列表标识。用 a / b 而不是 1 / 2，方便以后加第三个而不破坏存档。 */
+export type PlaylistId = "a" | "b";
+
+export const PLAYLIST_IDS: PlaylistId[] = ["a", "b"];
+
+/** 一个播放列表的设置。 */
+export interface PlaylistSettings {
+	/** 图片文件夹路径（支持绝对路径 / ~ / 环境变量，可位于仓库外）。 */
+	folder: string;
+	/** 该列表当前应用的图片绝对路径（切换列表或重启后用于恢复）。 */
+	currentImagePath: string;
+}
 
 export interface BgcSettings {
 	enabled: boolean;
-	/** 背景图片文件夹路径。 */
-	imageFolder: string;
-	/** 当前应用的图片绝对路径（用于重启后恢复）。 */
-	currentImagePath: string;
+	/** 当前生效的播放列表。 */
+	activePlaylist: PlaylistId;
+	/** 两个播放列表各自的文件夹与当前图片。 */
+	playlists: Record<PlaylistId, PlaylistSettings>;
 	/** 背景不透明度 0–0.8。 */
 	opacity: number;
 	/** 背景模糊像素 0–100。 */
@@ -30,6 +48,20 @@ export interface BgcSettings {
 	blendMode: string;
 	/** 是否启用淡入淡出过渡。 */
 	transitionEnabled: boolean;
+	/**
+	 * 纵向图的垂直取景位置：0 = 图片顶部，50 = 中间，100 = 底部。
+	 * 只对宽高比低于 aspectThreshold 的图、且只在 cover 尺寸模式下生效；
+	 * 横向图按 cover 已经能完整铺满横屏，不做任何位移。
+	 */
+	portraitPositionY: number;
+	/** 是否只用宽高比不小于阈值的图片。 */
+	filterByAspect: boolean;
+	/**
+	 * 宽高比阈值（宽 ÷ 高）。同时承担两个用途：
+	 * - 开启 filterByAspect 时作为筛选下限（例如 1.3 ≈ 4:3 及更宽的横向图）；
+	 * - 没有开启筛选时，作为「这张图算不算纵向图」的分界，决定要不要套用垂直取景位置。
+	 */
+	aspectThreshold: number;
 	/** 是否启用自动轮播。 */
 	autoStatus: boolean;
 	/** 自动轮播间隔（秒）。 */
@@ -53,13 +85,20 @@ export interface BgcSettings {
 
 export const DEFAULT_SETTINGS: BgcSettings = {
 	enabled: true,
-	imageFolder: "",
-	currentImagePath: "",
+	activePlaylist: "a",
+	playlists: {
+		a: { folder: "", currentImagePath: "" },
+		b: { folder: "", currentImagePath: "" },
+	},
 	opacity: 0.2,
 	blur: 0,
 	sizeModel: "cover",
 	blendMode: "auto",
 	transitionEnabled: true,
+	portraitPositionY: 50,
+	filterByAspect: false,
+	// 1.3 ≈ 4:3：低于它的图在横屏显示器上按 cover 铺满会被裁掉相当一部分
+	aspectThreshold: 1.3,
 	autoStatus: false,
 	autoIntervalSeconds: 60,
 	randomizeOnStart: false,
@@ -73,7 +112,11 @@ export const DEFAULT_SETTINGS: BgcSettings = {
 
 export class BackgroundCoverSettingTab extends PluginSettingTab {
 	plugin: BackgroundCoverPlugin;
-	private folderInfoEl: HTMLElement | null = null;
+	/** 每个播放列表下方的文件夹信息文本。 */
+	private readonly infoEls: Partial<Record<PlaylistId, HTMLElement>> = {};
+	private scanStatusEl: HTMLElement | null = null;
+	/** 「当前播放列表」下拉框：切换播放列表的命令执行后要同步它的显示值。 */
+	private activeDropdown: DropdownComponent | null = null;
 
 	constructor(app: App, plugin: BackgroundCoverPlugin) {
 		super(app, plugin);
@@ -95,43 +138,88 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 				})
 			);
 
-		// ---- 图片来源 ----
-		new Setting(containerEl).setName(t("settings.source.heading")).setHeading();
+		// ---- 播放列表 ----
+		new Setting(containerEl).setName(t("settings.playlist.heading")).setHeading();
 
 		new Setting(containerEl)
-			.setName(t("settings.folder.name"))
-			.setDesc(t("settings.folder.desc"))
-			.addText((text) =>
-				text
-					.setPlaceholder(t("settings.folder.placeholder"))
-					.setValue(this.plugin.settings.imageFolder)
+			.setName(t("settings.activePlaylist.name"))
+			.setDesc(t("settings.activePlaylist.desc"))
+			.addDropdown((dropdown) => {
+				for (const id of PLAYLIST_IDS) {
+					dropdown.addOption(id, this.playlistName(id));
+				}
+				dropdown.setValue(this.plugin.settings.activePlaylist).onChange(async (value) => {
+					await this.plugin.setActivePlaylist(value === "b" ? "b" : "a");
+				});
+				this.activeDropdown = dropdown;
+			});
+
+		for (const id of PLAYLIST_IDS) {
+			new Setting(containerEl)
+				.setName(t("settings.folder.name", { playlist: this.playlistName(id) }))
+				.setDesc(t("settings.folder.desc"))
+				.addText((text) =>
+					text
+						.setPlaceholder(t("settings.folder.placeholder"))
+						.setValue(this.plugin.settings.playlists[id].folder)
+						.onChange(async (value) => {
+							this.plugin.settings.playlists[id].folder = value;
+							await this.plugin.saveSettings();
+							this.plugin.invalidateFolderScan(id);
+							this.refreshInfo();
+							// 只有正在使用的列表才需要立刻重画背景；
+							// 编辑另一个列表的路径不应该打断当前显示
+							if (this.plugin.settings.activePlaylist === id) {
+								await this.plugin.applyRuntimeState();
+							}
+						})
+				);
+			this.infoEls[id] = containerEl.createDiv({ cls: "bgc-folder-info" });
+		}
+
+		new Setting(containerEl)
+			.setName(t("settings.scan.name"))
+			.setDesc(t("settings.scan.desc"))
+			.addButton((button) =>
+				button.setButtonText(t("settings.scan.button")).onClick(async () => {
+					await this.plugin.startScan();
+				})
+			);
+		this.scanStatusEl = containerEl.createDiv({ cls: "bgc-folder-info" });
+
+		// ---- 长宽比 ----
+		new Setting(containerEl).setName(t("settings.aspect.heading")).setHeading();
+
+		new Setting(containerEl)
+			.setName(t("settings.filterByAspect.name"))
+			.setDesc(t("settings.filterByAspect.desc"))
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.filterByAspect).onChange(async (value) => {
+					this.plugin.settings.filterByAspect = value;
+					await this.plugin.saveSettings();
+					this.plugin.invalidateFolderScan();
+					await this.plugin.applyRuntimeState();
+					this.refreshInfo();
+				})
+			);
+
+		new Setting(containerEl)
+			.setName(t("settings.aspectThreshold.name"))
+			.setDesc(t("settings.aspectThreshold.desc"))
+			.addSlider((slider) =>
+				slider
+					.setLimits(0.5, 3, 0.05)
+					.setValue(this.plugin.settings.aspectThreshold)
+					.setDynamicTooltip()
 					.onChange(async (value) => {
-						this.plugin.settings.imageFolder = value;
+						this.plugin.settings.aspectThreshold = value;
 						await this.plugin.saveSettings();
-						this.refreshFolderInfo();
+						// 阈值同时影响筛选结果与「算不算纵向图」，两条路径都要重算
+						this.plugin.invalidateFolderScan();
 						await this.plugin.applyRuntimeState();
+						this.refreshInfo();
 					})
 			);
-
-		new Setting(containerEl)
-			.setName(t("settings.count.name"))
-			.setDesc(t("settings.count.desc"))
-			.addButton((button) =>
-				button.setButtonText(t("settings.rescan")).onClick(async () => {
-					this.plugin.invalidateFolderScan();
-					this.refreshFolderInfo();
-					await this.plugin.applyRuntimeState();
-				})
-			)
-			// 「复制文件名」与「重新扫描」共用一个控件区：两者都是对"当前这张图/这个文件夹"的操作。
-			.addButton((button) =>
-				button.setButtonText(t("settings.copyName")).onClick(async () => {
-					await this.plugin.copyCurrentImageName();
-				})
-			);
-
-		this.folderInfoEl = containerEl.createDiv({ cls: "bgc-folder-info" });
-		this.refreshFolderInfo();
 
 		// ---- 外观 ----
 		new Setting(containerEl).setName(t("settings.appearance.heading")).setHeading();
@@ -205,6 +293,21 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 				})
 			);
 
+		new Setting(containerEl)
+			.setName(t("settings.portraitPosition.name"))
+			.setDesc(t("settings.portraitPosition.desc"))
+			.addSlider((slider) =>
+				slider
+					.setLimits(0, 100, 1)
+					.setValue(this.plugin.settings.portraitPositionY)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.portraitPositionY = value;
+						await this.plugin.saveSettings();
+						this.plugin.applyAppearance();
+					})
+			);
+
 		// ---- 与主题配合 ----
 		new Setting(containerEl).setName(t("settings.theme.heading")).setHeading();
 
@@ -274,7 +377,6 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 					})
 			);
 
-
 		// ---- 自动轮播 ----
 		new Setting(containerEl).setName(t("settings.auto.heading")).setHeading();
 
@@ -324,30 +426,93 @@ export class BackgroundCoverSettingTab extends PluginSettingTab {
 			.addButton((button) =>
 				button.setButtonText(t("settings.shuffle.button")).onClick(async () => {
 					await this.plugin.randomizeBackground();
-					this.refreshFolderInfo();
+					this.refreshInfo();
 				})
 			);
+
+		new Setting(containerEl)
+			.setName(t("settings.copyName.name"))
+			.setDesc(t("settings.copyName.desc"))
+			.addButton((button) =>
+				button.setButtonText(t("settings.copyName.button")).onClick(async () => {
+					await this.plugin.copyCurrentImageName();
+				})
+			);
+
+		this.refreshInfo();
 	}
 
-	refreshFolderInfo(): void {
-		if (!this.folderInfoEl) {
+	/** 播放列表的显示名（「播放列表 A」/「Playlist A」）。 */
+	playlistName(id: PlaylistId): string {
+		return id === "b" ? t("settings.playlist.b") : t("settings.playlist.a");
+	}
+
+	/** 刷新两个播放列表的文件夹信息与尺寸扫描状态（换图、换列表、扫描后调用）。 */
+	refreshInfo(): void {
+		for (const id of PLAYLIST_IDS) {
+			this.refreshPlaylistInfo(id);
+		}
+		this.activeDropdown?.setValue(this.plugin.settings.activePlaylist);
+		this.refreshScanStatus();
+	}
+
+	/** 扫描进度由插件在扫描过程中实时写入，不重建整个设置页。 */
+	setScanStatus(text: string): void {
+		this.scanStatusEl?.setText(text);
+	}
+
+	private refreshPlaylistInfo(id: PlaylistId): void {
+		const el = this.infoEls[id];
+		if (!el) {
 			return;
 		}
-		const plugin = this.plugin;
-		const folder = plugin.settings.imageFolder;
+		const folder = this.plugin.settings.playlists[id].folder;
 		if (!folder) {
-			this.folderInfoEl.setText(t("settings.folderInfo.empty"));
+			el.setText(t("settings.folderInfo.empty"));
 			return;
 		}
 		if (!isDirectory(folder)) {
-			this.folderInfoEl.setText(t("settings.folderInfo.invalid"));
+			el.setText(t("settings.folderInfo.invalid"));
 			return;
 		}
-		const files = plugin.scanFolder();
-		const currentPath = plugin.getCurrentDisplayPath();
-		const current = currentPath ? t("settings.folderInfo.current", { path: currentPath }) : "";
-		this.folderInfoEl.setText(
-			t("settings.folderInfo.count", { count: files.length }) + current
-		);
+		const stats = this.plugin.getPlaylistStats(id);
+		const filtered =
+			stats.shown === stats.total
+				? t("settings.folderInfo.count", { count: stats.total })
+				: t("settings.folderInfo.filtered", { count: stats.shown, total: stats.total });
+		let text = this.plugin.settings.activePlaylist === id ? t("settings.folderInfo.active") : "";
+		text += filtered;
+		if (this.plugin.settings.activePlaylist === id) {
+			const currentPath = this.plugin.getCurrentDisplayPath();
+			if (currentPath) {
+				text += t("settings.folderInfo.current", { path: currentPath });
+			}
+		}
+		el.setText(text);
+	}
+
+	private refreshScanStatus(): void {
+		if (!this.scanStatusEl || this.plugin.isScanning) {
+			return;
+		}
+		const summary = this.plugin.getScanSummary();
+		if (summary.total === 0) {
+			this.scanStatusEl.setText(t("settings.scan.noFolder"));
+			return;
+		}
+		if (summary.measured === 0) {
+			this.scanStatusEl.setText(t("settings.scan.idle"));
+			return;
+		}
+		let text = t("settings.scan.summary", {
+			measured: summary.measured,
+			total: summary.total,
+			landscape: summary.landscape,
+			portrait: summary.portrait,
+		});
+		if (summary.unknown > 0) {
+			text += t("settings.scan.unknown", { count: summary.unknown });
+		}
+		this.scanStatusEl.setText(text);
 	}
 }

@@ -118,7 +118,7 @@ body.bgc-transparent-theme .bgc-layer {
 	border-radius: 4px;
 }
 
-/* 设置页：文件夹信息文本 */
+/* 设置页：文件夹信息 / 尺寸扫描状态文本 */
 .bgc-folder-info {
 	margin: 4px 0 12px;
 	font-size: var(--font-ui-small);
@@ -126,11 +126,6 @@ body.bgc-transparent-theme .bgc-layer {
 	overflow-wrap: anywhere;
 }
 
-/* 诊断用的探针（见 src/diagnostics.ts）：挂上它就能读到主题弹窗底色的实际解析值。
-   自定义属性的计算值不做 var() 替换，只能借一个真实渲染的元素让浏览器算出来。 */
-.bgc-probe-modal-bg {
-	background-color: var(--settings-background, var(--modal-background));
-}
 /* =============================================================================
    主题背景透明化 —— 插件设置「让主题背景透明」打开时，body 上会加此类。
    这是本插件**唯一**会覆盖主题背景颜色的功能，默认关闭。

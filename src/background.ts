@@ -43,6 +43,7 @@ import { promises as fsp } from "fs";
 import * as path from "path";
 
 import { resolveSizeModel } from "./css";
+import { parseImageSize, type ImageSize } from "./imageSize";
 import type { BgcSettings } from "./settings";
 
 /** 扩展名 → MIME 类型。 */
@@ -80,13 +81,19 @@ const BLEND_CLASSES: Record<string, string> = {
 /**
  * 读取单个图片文件并生成 blob URL（仅当前这一张）。
  * 调用方负责在不再需要时 revokeObjectURL（见 BackgroundLayer.setImage / unmount）。
+ *
+ * 顺手从这份已经读进内存的数据里解析尺寸（不额外读盘）：知道宽高才能判断这张图
+ * 是不是纵向图，从而决定是否套用垂直取景位置。
  */
-export async function createImageObjectUrl(filePath: string): Promise<string> {
+export async function createImageObjectUrl(
+	filePath: string
+): Promise<{ url: string; size: ImageSize | null }> {
 	const buffer = await fsp.readFile(filePath);
 	const ext = path.extname(filePath).toLowerCase();
 	const mime = MIME_MAP[ext] ?? "image/jpeg";
+	const size = parseImageSize(buffer.subarray(0, 2 * 1024 * 1024), ext);
 	// Node 的 Buffer 本身就是 Uint8Array，直接交给 Blob，避免为几十 MB 的整图再复制一份
-	return URL.createObjectURL(new Blob([buffer], { type: mime }));
+	return { url: URL.createObjectURL(new Blob([buffer], { type: mime })), size };
 }
 
 export class BackgroundLayer {
@@ -101,6 +108,8 @@ export class BackgroundLayer {
 	private settings: BgcSettings;
 	/** 当前实际显示在背景层上的图片路径（单一事实来源）。 */
 	private currentPath: string | null = null;
+	/** 当前这张图是否为纵向图（决定是否套用垂直取景位置）。 */
+	private currentPortrait = false;
 
 	constructor(container: HTMLElement, settings: BgcSettings) {
 		this.container = container;
@@ -129,6 +138,7 @@ export class BackgroundLayer {
 		this.images.length = 0;
 		this.releaseAllObjectUrls();
 		this.currentPath = null;
+		this.currentPortrait = false;
 		this.visible = false;
 		for (const cls of Object.values(BLEND_CLASSES)) {
 			this.container.removeClass(cls);
@@ -144,9 +154,10 @@ export class BackgroundLayer {
 	 *
 	 * @param objectUrl 新图的 blob URL（本方法接管其生命周期）
 	 * @param filePath 新图对应的文件路径（记录为当前显示，供设置页展示）
+	 * @param portrait 新图是否为纵向图（决定是否套用垂直取景位置）
 	 * @returns 是否成功应用；返回 false 时 objectUrl 已被释放
 	 */
-	setImage(objectUrl: string, filePath?: string): boolean {
+	setImage(objectUrl: string, filePath?: string, portrait = false): boolean {
 		const nextIndex = 1 - this.activeIndex;
 		const next = this.images[nextIndex];
 		if (!next) {
@@ -165,7 +176,9 @@ export class BackgroundLayer {
 		next.setCssProps({ "--bgc-image": `url("${objectUrl}")` });
 		// 先切换活动层再统一写 opacity：旧层归零、新层淡入，一步到位
 		this.activeIndex = nextIndex;
-		this.applyOpacity();
+		// 垂直取景位置随图变化（纵向图才位移），外观整体重写一次即可
+		this.currentPortrait = portrait;
+		this.applyAppearance();
 		if (filePath) {
 			this.currentPath = filePath;
 		}
@@ -178,7 +191,11 @@ export class BackgroundLayer {
 	 */
 	applyAppearance(): void {
 		if (this.wrapper) {
-			const { size, repeat, position } = resolveSizeModel(this.settings.sizeModel);
+			const { size, repeat, position } = resolveSizeModel(
+				this.settings.sizeModel,
+				this.currentPortrait,
+				this.settings.portraitPositionY
+			);
 			this.wrapper.setCssProps({
 				"--bgc-size": size,
 				"--bgc-repeat": repeat,

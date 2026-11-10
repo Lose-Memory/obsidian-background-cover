@@ -96,6 +96,29 @@ export async function createImageObjectUrl(
 	return { url: URL.createObjectURL(new Blob([buffer], { type: mime })), size };
 }
 
+/**
+ * 等这张图真正解码完成（像素就绪），再交给 CSS 当背景用。
+ *
+ * 为什么必须等：`background-image` 只是把资源挂到元素上，**解码是异步的**；而新层在
+ * 淡入之前透明度为 0，浏览器不会为看不见的元素解码。于是旧壁纸在 0.25s 内淡出后，
+ * 新层还是一片空白，中间露出页面底色（深色主题下就是纯黑）——图库里大量是几十 MB、
+ * 上亿像素的图，解码要一两秒，看上去就是「换壁纸先黑一两秒」。先解码再切，旧图会一直
+ * 留到新图能画出来为止，中间不再有黑屏。
+ *
+ * 用 `.decode()` 而不是等 `onload`：blob URL 的「下载」是瞬时的，耗时全在解码，
+ * `onload` 早于解码完成。解码失败（文件损坏、浏览器不支持的编码）不向调用方抛错——
+ * 那种情况下照常切换，让 CSS 自己再试一次，行为与改动前一致。
+ */
+export async function decodeImage(url: string): Promise<void> {
+	const image = new Image();
+	image.src = url;
+	try {
+		await image.decode();
+	} catch {
+		// 解码失败：不阻塞切换，交给 CSS 再试一次
+	}
+}
+
 export class BackgroundLayer {
 	private readonly container: HTMLElement;
 	private wrapper: HTMLElement | null = null;

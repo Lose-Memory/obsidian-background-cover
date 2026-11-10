@@ -15,7 +15,7 @@ import * as path from "path";
 
 import { Notice, Plugin } from "obsidian";
 
-import { BackgroundLayer, createImageObjectUrl } from "./background";
+import { BackgroundLayer, createImageObjectUrl, decodeImage } from "./background";
 import { toRgbaColor } from "./css";
 import { expandPathVariables, fileNameOf, isDirectory, listImagesInFolder, ShufflePlaylist } from "./folder";
 import { t } from "./i18n";
@@ -491,6 +491,13 @@ export default class BackgroundCoverPlugin extends Plugin {
 			this.sizeIndex[filePath] = { ...loaded.size, mtimeMs: 0, size: 0 };
 		}
 		const portrait = isPortrait(loaded.size ?? undefined, this.settings.aspectThreshold);
+		// 先等新图解码完再切：否则旧层淡出后新层还画不出来，中间会露出黑色底色
+		await decodeImage(loaded.url);
+		// 解码期间又来了新的切换请求，本请求已过期：丢弃并释放这一张的内存
+		if (seq !== this.switchSeq) {
+			URL.revokeObjectURL(loaded.url);
+			return false;
+		}
 		if (!this.layer.setImage(loaded.url, filePath, portrait)) {
 			// setImage 未能应用时已自行释放该 URL
 			return false;

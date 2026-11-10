@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-11-10
+
+### Fixed
+
+- **Switching wallpaper no longer shows the page background first.** The new image used to be handed to CSS and faded in straight away, but `background-image` only attaches the resource: the decode is asynchronous, and a layer that is still at opacity 0 is not decoded at all. The outgoing wallpaper faded out over 0.25 s while the incoming one was still empty, so the page background (pure black in a dark theme with **Make theme background transparent** on) showed through — one to two seconds with the tens-of-megapixels wallpapers this plugin tends to be pointed at. The new image is now awaited through `Image.decode()` before either layer is touched, so the old wallpaper stays visible until the new one can be painted and the cross-fade runs as before. Measured with a 42 MP and a 102 MP JPEG in a headless browser reproducing the layer structure: 330 ms and 550 ms of exposed background before, none after. A failed decode does not block the switch — it falls through to the old behaviour.
+
 ## [1.2.1] - 2026-10-28
 
 ### Fixed

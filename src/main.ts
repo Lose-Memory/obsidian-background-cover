@@ -16,7 +16,7 @@ import * as path from "path";
 import { Notice, Plugin } from "obsidian";
 
 import { BackgroundLayer, createImageObjectUrl, decodeImage } from "./background";
-import { toRgbaColor } from "./css";
+import { sizeModelScalesToViewport, toRgbaColor } from "./css";
 import { expandPathVariables, fileNameOf, isDirectory, listImagesInFolder, ShufflePlaylist } from "./folder";
 import { t } from "./i18n";
 import {
@@ -475,7 +475,10 @@ export default class BackgroundCoverPlugin extends Plugin {
 		const seq = ++this.switchSeq;
 		let loaded: { url: string; size: ImageSize | null };
 		try {
-			loaded = await createImageObjectUrl(filePath);
+			loaded = await createImageObjectUrl(
+				filePath,
+				sizeModelScalesToViewport(this.settings.sizeModel),
+			);
 		} catch (error) {
 			console.error("[BackgroundCover] Failed to apply image:", error);
 			new Notice(t("notice.loadFailed", { message: (error as Error).message }));

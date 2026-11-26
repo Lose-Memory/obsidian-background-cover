@@ -82,6 +82,16 @@ export function resolveSizeModel(
 	return { size, repeat, position };
 }
 
+/**
+ * 该尺寸模式是否「按视口显示」（cover / contain / center）。
+ *
+ * 这类模式下面位图只需要覆盖视口，超出视口的像素纯属浪费；`auto` 系列
+ * （repeat / not_*）按图片原始像素显示，缩放会改变画面，不能动。
+ */
+export function sizeModelScalesToViewport(model: string): boolean {
+	return model === "cover" || model === "contain" || model === "center";
+}
+
 /** 把垂直取景位置夹到 0–100 并取整（滑块已限制范围，这里防脏数据）。 */
 export function clampPercent(value: number): number {
 	if (!Number.isFinite(value)) {

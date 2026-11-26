@@ -59,6 +59,17 @@ const MIME_MAP: Record<string, string> = {
 	".avif": "image/avif",
 };
 
+/**
+ * 可以先缩放再交给 CSS 的格式。
+ *
+ * gif 缩放会丢掉动画、svg 是矢量（缩放没有收益），两者直接跳过；其余位图格式
+ * 都按「铺满视口需要多少像素」重采样一次。
+ */
+const SCALABLE_EXTS = new Set([".jpg", ".jpeg", ".jfif", ".png", ".webp", ".bmp", ".avif"]);
+
+/** 重采样后的编码质量（webp 有损；壁纸以 0.2–0.8 的透明度垫在界面后面，看不出差别）。 */
+const SCALED_QUALITY = 0.92;
+
 /** 背景层根容器类名（承载混合模式与模糊，属性恒定，不参与动画）。 */
 export const BGC_LAYER_CLASS = "bgc-layer";
 
@@ -84,16 +95,81 @@ const BLEND_CLASSES: Record<string, string> = {
  *
  * 顺手从这份已经读进内存的数据里解析尺寸（不额外读盘）：知道宽高才能判断这张图
  * 是不是纵向图，从而决定是否套用垂直取景位置。
+ *
+ * @param fitToViewport 尺寸模式是否按视口显示（见 css.ts 的 sizeModelScalesToViewport）；
+ *   为 true 时先把图重采样到「铺满当前视口所需的像素」，理由见 downscaleToViewport。
  */
 export async function createImageObjectUrl(
-	filePath: string
+	filePath: string,
+	fitToViewport = false
 ): Promise<{ url: string; size: ImageSize | null }> {
 	const buffer = await fsp.readFile(filePath);
 	const ext = path.extname(filePath).toLowerCase();
 	const mime = MIME_MAP[ext] ?? "image/jpeg";
 	const size = parseImageSize(buffer.subarray(0, 2 * 1024 * 1024), ext);
 	// Node 的 Buffer 本身就是 Uint8Array，直接交给 Blob，避免为几十 MB 的整图再复制一份
-	return { url: URL.createObjectURL(new Blob([buffer], { type: mime })), size };
+	const blob = new Blob([buffer], { type: mime });
+	if (fitToViewport && size && SCALABLE_EXTS.has(ext)) {
+		const scaled = await downscaleToViewport(blob, size);
+		if (scaled) {
+			return { url: URL.createObjectURL(scaled), size };
+		}
+	}
+	return { url: URL.createObjectURL(blob), size };
+}
+
+/**
+ * 把整图重采样到「铺满当前视口所需的最小尺寸」。
+ *
+ * 为什么必须缩：`background-size: cover` 只是让浏览器把这张图缩小后贴满全屏，
+ * **位图本身一直是原始尺寸**，解码、纹理上传与每帧合成都按原图规模算。实测某图库
+ * 22447 张、平均 25.7 MP、最大 169 MP（解码后约 645 MB）：这种量级的常驻位图会把
+ * 整个窗口的合成拖慢——点击延迟、拖动/双击最大化时画面不跟手，都是同一个现象。
+ * 按视口先缩一次之后，常驻位图恒等于屏幕像素，与图库里放多大的原图无关。
+ *
+ * 缩放保持原始宽高比、按 cover 的规则取「较小的一边刚好铺满视口」，所以缩放之后
+ * CSS 的 `background-size: cover` 仍然是 1:1，`background-position` 的取景位置
+ * （纵向图的上/中/下）行为完全不变。
+ *
+ * @returns 重采样后的图片；无需缩放或失败时返回 null（调用方退回原图）
+ */
+async function downscaleToViewport(blob: Blob, size: ImageSize): Promise<Blob | null> {
+	if (size.width <= 0 || size.height <= 0) {
+		return null;
+	}
+	const dpr = window.devicePixelRatio || 1;
+	const viewportWidth = Math.max(1, Math.round(window.innerWidth * dpr));
+	const viewportHeight = Math.max(1, Math.round(window.innerHeight * dpr));
+	const scale = Math.max(viewportWidth / size.width, viewportHeight / size.height);
+	if (scale >= 1) {
+		// 原图不比视口大：再缩只会更糊
+		return null;
+	}
+	const targetWidth = Math.max(1, Math.round(size.width * scale));
+	const targetHeight = Math.max(1, Math.round(size.height * scale));
+	let bitmap: ImageBitmap | null = null;
+	try {
+		bitmap = await createImageBitmap(blob, {
+			resizeWidth: targetWidth,
+			resizeHeight: targetHeight,
+			resizeQuality: "high",
+			// 与 CSS 保持一致按 EXIF 方向摆正，否则带旋转信息的照片会被再转一次
+			imageOrientation: "from-image",
+		});
+		// 离屏画布：只用来重采样 + 编码，不需要进 DOM
+		const canvas = new OffscreenCanvas(targetWidth, targetHeight);
+		const context = canvas.getContext("2d");
+		if (!context) {
+			return null;
+		}
+		context.drawImage(bitmap, 0, 0);
+		return await canvas.convertToBlob({ type: "image/webp", quality: SCALED_QUALITY });
+	} catch {
+		// 解码/编码失败（文件损坏、浏览器不支持该编码）：退回原图，让 CSS 自己再试一次
+		return null;
+	} finally {
+		bitmap?.close();
+	}
 }
 
 /**

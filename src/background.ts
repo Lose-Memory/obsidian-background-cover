@@ -221,6 +221,11 @@ export class BackgroundLayer {
 			return;
 		}
 		this.wrapper = this.container.createDiv({ cls: BGC_LAYER_CLASS });
+		// 必须排在 body 的第一个子节点：Obsidian 用 `body.is-frameless > .app-container ~ *`
+		// 把排在 .app-container 之后的元素标成 `-webkit-app-region: no-drag`，而 Chromium
+		// 按绘制顺序叠加这些区域，最后一块铺满全窗的 no-drag 会把标签栏那条 drag 区整块抹掉，
+		// 于是窗口既拖不动、双击也不会最大化。挪到最前面就不会再匹配那条选择器。
+		this.container.prepend(this.wrapper);
 		for (let i = 0; i < 2; i++) {
 			const el = this.wrapper.createDiv({ cls: BGC_IMAGE_CLASS });
 			el.setCssProps({ "--bgc-opacity": "0" });

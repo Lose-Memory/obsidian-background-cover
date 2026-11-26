@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2026-11-26
+
+### Fixed
+
+- **Window dragging and double-click-to-maximize work again in a frameless window.** On Windows with **Window frame style → Hidden** the window can only be moved by grabbing the tab strip, and that capability is a CSS rectangle: the app marks the tab-header container with `-webkit-app-region: drag`. Chromium layers every `app-region` rectangle in paint order, so a later full-window `no-drag` erases the drag rectangle it covers. The wallpaper layer was appended to `document.body`, i.e. after `.app-container`, which is exactly what `body.is-frameless > .app-container ~ *` targets with `-webkit-app-region: no-drag` — every other `app-region` rule in that stylesheet exists to keep that carve-out off things that must stay draggable, and the app exempts its own full-screen overlays with `app-region: initial` for the same reason. The layer is now inserted as the **first** child of `body`, so the selector no longer matches and the layer contributes no region at all. Verified on Obsidian 1.14.4 (Windows 11, 4K at 150%): with the layer appended, a real mouse drag from the tab strip moved the window 0 px and a double-click left it un-maximized; with the layer first, the same drag moved it 73×55 px and the same double-click toggled maximize. Rendering is unchanged — the layer still sits behind the content via `z-index: -1` in true-background mode.
+
+### Changed
+
+- **The wallpaper is resampled to screen pixels instead of being handed to CSS at full resolution.** Wallpaper folders are usually tens of megapixels per image (the library this was tested against has 92% of its images above 8 MP, the largest being 11276×14987, about 645 MB once decoded), and that decoded bitmap stayed resident for as long as the image was shown. Images are now decoded once through `createImageBitmap` with `resizeWidth`/`resizeHeight` and re-encoded to WebP at viewport size × device pixel ratio, using the same scale factor `background-size: cover` would have picked, so the framing is identical. That is 169 MP → 2355×3130 (0.88 MB) at 1600×1000 @1.5x, costing one ~260 ms main-thread pass at the moment of a switch. Only the size modes that scale to the viewport are resampled (`cover`, `contain`, `center`); the pixel-exact ones are left alone, as are GIF (animation) and SVG (vector).
+
 ## [1.2.2] - 2026-11-10
 
 ### Fixed
